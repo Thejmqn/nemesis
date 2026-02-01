@@ -72,6 +72,7 @@ function App() {
                 setUser={setUser}
                 setError={setError}
                 setSuccess={setSuccess}
+                setCurrentView={setCurrentView}
                 onBack={() => { setCurrentView('home'); clearMessages() }}
               />
             )}
@@ -92,19 +93,13 @@ function App() {
                 className={currentView === 'survey' ? 'active' : ''}
                 onClick={() => { setCurrentView('survey'); clearMessages() }}
               >
-                Take Survey
+                Answer Questions
               </button>
               <button 
                 className={currentView === 'matches' ? 'active' : ''}
                 onClick={() => { setCurrentView('matches'); clearMessages() }}
               >
                 My Enemies
-              </button>
-              <button 
-                className={currentView === 'new-questions' ? 'active' : ''}
-                onClick={() => { setCurrentView('new-questions'); clearMessages() }}
-              >
-                New Questions
               </button>
             </nav>
 
@@ -122,14 +117,6 @@ function App() {
                 setError={setError}
               />
             )}
-
-            {currentView === 'new-questions' && (
-              <NewQuestionsView 
-                userId={userId}
-                setError={setError}
-                setSuccess={setSuccess}
-              />
-            )}
           </>
         )}
       </div>
@@ -137,27 +124,77 @@ function App() {
   )
 }
 
-function HomeView({ onRegister, onLogin, setUserId, setUser, setError, setSuccess, clearMessages }) {
+function HomeView({ onRegister, onLogin }) {
   return (
-    <div className="card">
-      <h2>Welcome to Nemesis!</h2>
-      <p style={{ marginBottom: '20px', fontSize: '18px' }}>
-        Answer controversial questions and get matched with your perfect enemy each month.
-        The more you disagree, the better the match!
-      </p>
-      <div style={{ display: 'flex', gap: '15px' }}>
-        <button className="btn btn-primary" onClick={onRegister}>
-          Create Account
-        </button>
-        <button className="btn btn-secondary" onClick={onLogin}>
-          Login
-        </button>
+    <div className="landing-page">
+      <div className="landing-hero">
+        <h1 className="landing-title">🎯 NEMESIS</h1>
+        <p className="landing-quote">"Keep your friends close and your enemies closer"</p>
+        <p className="landing-subtitle">— Sun Tzu, The Art of War</p>
+      </div>
+
+      <div className="landing-content">
+        <div className="landing-section">
+          <h2>⚔️ Know Your Enemy</h2>
+          <p>
+            In a world where everyone tries to find friends, we take a different approach. 
+            Nemesis matches you with your perfect enemy based on your answers to controversial questions.
+          </p>
+        </div>
+
+        <div className="landing-section">
+          <h2>🔥 The More You Disagree, The Better</h2>
+          <p>
+            Answer thought-provoking questions on topics that divide opinions. The greater the difference 
+            in your answers, the higher your incompatibility score. Find someone who challenges your 
+            every belief—your perfect nemesis.
+          </p>
+        </div>
+
+        <div className="landing-section">
+          <h2>🌙 Monthly Matches</h2>
+          <p>
+            Each month, our algorithm analyzes all responses and pairs you with your new enemy. 
+            Receive email notifications when your match is ready. Stay vigilant—your nemesis awaits.
+          </p>
+        </div>
+
+        <div className="landing-features">
+          <div className="feature-card">
+            <div className="feature-icon">💀</div>
+            <h3>Villain Matching</h3>
+            <p>Find your arch-nemesis through algorithmic incompatibility</p>
+          </div>
+          <div className="feature-card">
+            <div className="feature-icon">⚡</div>
+            <h3>Controversial Questions</h3>
+            <p>Answer divisive questions that reveal your true nature</p>
+          </div>
+          <div className="feature-card">
+            <div className="feature-icon">🎭</div>
+            <h3>Monthly Updates</h3>
+            <p>New enemies await you every month</p>
+          </div>
+        </div>
+
+        <div className="landing-cta">
+          <h2>Ready to Meet Your Nemesis?</h2>
+          <p>Join the dark side and discover who your perfect enemy is</p>
+          <div style={{ display: 'flex', gap: '15px', justifyContent: 'center', marginTop: '30px' }}>
+            <button className="btn btn-primary" onClick={onRegister}>
+              Begin Your Journey
+            </button>
+            <button className="btn btn-secondary" onClick={onLogin}>
+              Return to Darkness
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   )
 }
 
-function RegisterView({ setUserId, setUser, setError, setSuccess, onBack }) {
+function RegisterView({ setUserId, setUser, setError, setSuccess, onBack, setCurrentView }) {
   const [formData, setFormData] = useState({
     email: '',
     username: '',
@@ -171,11 +208,15 @@ function RegisterView({ setUserId, setUser, setError, setSuccess, onBack }) {
 
     try {
       const response = await axios.post(`${API_BASE}/users/`, formData)
-      setSuccess('Account created successfully!')
+      setSuccess('Account created successfully! Please answer the questions to get started.')
       localStorage.setItem('userId', response.data.id)
       setUserId(response.data.id)
       setUser(response.data)
-      setTimeout(() => setSuccess(''), 3000)
+      // Redirect to survey after registration
+      setTimeout(() => {
+        setCurrentView('survey')
+        setSuccess('')
+      }, 2000)
     } catch (err) {
       setError(err.response?.data?.detail || 'Failed to create account')
     }
@@ -275,6 +316,7 @@ function LoginView({ setUserId, setUser, setError, setSuccess, onBack }) {
 function SurveyView({ userId, setError, setSuccess }) {
   const [questions, setQuestions] = useState([])
   const [answers, setAnswers] = useState({})
+  const [answeredQuestionIds, setAnsweredQuestionIds] = useState(new Set())
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
 
@@ -298,10 +340,13 @@ function SurveyView({ userId, setError, setSuccess }) {
     try {
       const response = await axios.get(`${API_BASE}/answers/user/${userId}`)
       const answerMap = {}
+      const answeredIds = new Set()
       response.data.forEach(ans => {
         answerMap[ans.question_id] = ans.answer_value
+        answeredIds.add(ans.question_id)
       })
       setAnswers(answerMap)
+      setAnsweredQuestionIds(answeredIds)
     } catch (err) {
       console.error('Error fetching answers:', err)
     }
@@ -324,10 +369,12 @@ function SurveyView({ userId, setError, setSuccess }) {
 
     try {
       await axios.post(`${API_BASE}/answers/survey/${userId}`, { answers: answerList })
-      setSuccess('Survey submitted successfully!')
+      setSuccess('Answers saved successfully!')
+      // Refresh answered questions
+      fetchUserAnswers()
       setTimeout(() => setSuccess(''), 3000)
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to submit survey')
+      setError(err.response?.data?.detail || 'Failed to save answers')
     } finally {
       setSubmitting(false)
     }
@@ -341,40 +388,82 @@ function SurveyView({ userId, setError, setSuccess }) {
     return <div className="card">No questions available yet. Check back later!</div>
   }
 
+  // Separate questions into answered and unanswered
+  const unansweredQuestions = questions.filter(q => !answeredQuestionIds.has(q.id))
+  const answeredQuestions = questions.filter(q => answeredQuestionIds.has(q.id))
+
   return (
     <div className="card">
-      <h2>Controversial Questions Survey</h2>
+      <h2>Answer Questions</h2>
       <p style={{ marginBottom: '20px' }}>
-        Rate each statement from 1 (Strongly Disagree) to 10 (Strongly Agree)
+        Rate each statement from 1 (Strongly Disagree) to 10 (Strongly Agree).
+        You can update your answers at any time.
       </p>
-      <form onSubmit={handleSubmit}>
-        {questions.map(question => (
-          <div key={question.id} className="question-item">
-            <label>{question.text}</label>
-            <div className="slider-container">
-              <input
-                type="range"
-                min="1"
-                max="10"
-                value={answers[question.id] || 5}
-                onChange={(e) => handleAnswerChange(question.id, parseInt(e.target.value))}
-                className="slider"
-              />
-              <div className="slider-value">
-                {answers[question.id] || 5} / 10
+      
+      {unansweredQuestions.length > 0 && (
+        <div style={{ marginBottom: '30px' }}>
+          <h3 style={{ color: '#FFA586', marginBottom: '15px' }}>
+            New Questions ({unansweredQuestions.length})
+          </h3>
+          {unansweredQuestions.map(question => (
+            <div key={question.id} className="question-item" style={{ borderLeft: '4px solid #B51A2B' }}>
+              <label>{question.text}</label>
+              <div className="slider-container">
+                <input
+                  type="range"
+                  min="1"
+                  max="10"
+                  value={answers[question.id] || 5}
+                  onChange={(e) => handleAnswerChange(question.id, parseInt(e.target.value))}
+                  className="slider"
+                />
+                <div className="slider-value">
+                  {answers[question.id] || 5} / 10
+                </div>
               </div>
             </div>
-          </div>
-        ))}
-        <button 
-          type="submit" 
-          className="btn btn-primary" 
-          disabled={submitting}
-          style={{ marginTop: '20px', width: '100%' }}
-        >
-          {submitting ? 'Submitting...' : 'Submit Survey'}
-        </button>
-      </form>
+          ))}
+        </div>
+      )}
+
+      {answeredQuestions.length > 0 && (
+        <div style={{ marginBottom: '30px' }}>
+          <h3 style={{ color: '#FFA586', marginBottom: '15px' }}>
+            Your Answers ({answeredQuestions.length})
+          </h3>
+          <p style={{ fontSize: '14px', color: '#888', marginBottom: '15px' }}>
+            You can modify your answers below
+          </p>
+          {answeredQuestions.map(question => (
+            <div key={question.id} className="question-item" style={{ borderLeft: '4px solid #541A2E' }}>
+              <label>{question.text}</label>
+              <div className="slider-container">
+                <input
+                  type="range"
+                  min="1"
+                  max="10"
+                  value={answers[question.id] || 5}
+                  onChange={(e) => handleAnswerChange(question.id, parseInt(e.target.value))}
+                  className="slider"
+                />
+                <div className="slider-value">
+                  {answers[question.id] || 5} / 10
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <button 
+        type="button"
+        onClick={handleSubmit}
+        className="btn btn-primary" 
+        disabled={submitting || Object.keys(answers).length === 0}
+        style={{ marginTop: '20px', width: '100%' }}
+      >
+        {submitting ? 'Saving...' : 'Save Answers'}
+      </button>
     </div>
   )
 }
@@ -398,30 +487,18 @@ function MatchesView({ userId, setError }) {
     }
   }
 
-  const handleFindEnemy = async () => {
-    try {
-      const response = await axios.post(`${API_BASE}/matches/user/${userId}/find-enemy`)
-      setMatches([response.data, ...matches])
-      alert(`New enemy found: ${response.data.enemy_username} (Score: ${response.data.match_score})`)
-    } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to find enemy')
-    }
-  }
-
   if (loading) {
     return <div className="card loading">Loading matches...</div>
   }
 
   return (
     <div className="card">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-        <h2>My Enemy Matches</h2>
-        <button className="btn btn-primary" onClick={handleFindEnemy}>
-          Find New Enemy
-        </button>
-      </div>
+      <h2>My Enemy Matches</h2>
+      <p style={{ marginBottom: '20px', color: '#666' }}>
+        Your matches are generated automatically by administrators. New matches appear here after each monthly matching cycle.
+      </p>
       {matches.length === 0 ? (
-        <p>No matches yet. Complete the survey first, then click "Find New Enemy"!</p>
+        <p>No matches yet. Complete the survey and wait for the next matching cycle!</p>
       ) : (
         <div className="matches-list">
           {matches.map(match => (
@@ -434,81 +511,6 @@ function MatchesView({ userId, setError }) {
           ))}
         </div>
       )}
-    </div>
-  )
-}
-
-function NewQuestionsView({ userId, setError, setSuccess }) {
-  const [questions, setQuestions] = useState([])
-  const [newQuestion, setNewQuestion] = useState('')
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    fetchQuestions()
-  }, [])
-
-  const fetchQuestions = async () => {
-    try {
-      const response = await axios.get(`${API_BASE}/questions/?active_only=false`)
-      setQuestions(response.data)
-      setLoading(false)
-    } catch (err) {
-      setError('Failed to load questions')
-      setLoading(false)
-    }
-  }
-
-  const handleSubmitQuestion = async (e) => {
-    e.preventDefault()
-    if (!newQuestion.trim()) return
-
-    try {
-      await axios.post(`${API_BASE}/questions/`, { text: newQuestion })
-      setSuccess('Question added successfully!')
-      setNewQuestion('')
-      fetchQuestions()
-      setTimeout(() => setSuccess(''), 3000)
-    } catch (err) {
-      setError('Failed to add question')
-    }
-  }
-
-  if (loading) {
-    return <div className="card loading">Loading questions...</div>
-  }
-
-  return (
-    <div className="card">
-      <h2>Add New Controversial Question</h2>
-      <form onSubmit={handleSubmitQuestion} style={{ marginBottom: '30px' }}>
-        <label>Question Text</label>
-        <input
-          type="text"
-          value={newQuestion}
-          onChange={(e) => setNewQuestion(e.target.value)}
-          placeholder="e.g., Pineapple belongs on pizza"
-          required
-        />
-        <button type="submit" className="btn btn-primary">Add Question</button>
-      </form>
-
-      <h3>All Questions</h3>
-      <div className="questions-list">
-        {questions.map(question => (
-          <div key={question.id} className="question-item" style={{ 
-            padding: '15px', 
-            background: question.is_active ? '#f8f9fa' : '#e9ecef',
-            marginBottom: '10px',
-            borderRadius: '6px'
-          }}>
-            <p><strong>{question.text}</strong></p>
-            <p style={{ fontSize: '14px', color: '#666' }}>
-              Status: {question.is_active ? 'Active' : 'Inactive'} | 
-              Created: {new Date(question.created_at).toLocaleDateString()}
-            </p>
-          </div>
-        ))}
-      </div>
     </div>
   )
 }

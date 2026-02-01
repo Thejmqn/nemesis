@@ -10,9 +10,9 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #161E2F 0%, #242F49 50%, #541A2E 100%);
   min-height: 100vh;
-  color: #333;
+  color: #e0e0e0;
 }
 
 code {
@@ -27,11 +27,24 @@ code {
 }
 
 .card {
-  background: white;
+  background: #384358;
   border-radius: 12px;
   padding: 30px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
   margin-bottom: 20px;
+  border: 1px solid #242F49;
+  color: #e0e0e0;
+}
+
+.card h2 {
+  color: #FFA586;
+  margin-bottom: 20px;
+  border-bottom: 2px solid #B51A2B;
+  padding-bottom: 10px;
+}
+
+.card h3 {
+  color: #FFA586;
 }
 
 .btn {
@@ -45,44 +58,55 @@ code {
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #B51A2B 0%, #541A2E 100%);
   color: white;
+  border: 1px solid #FFA586;
 }
 
 .btn-primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 5px 15px rgba(181, 26, 43, 0.6);
+  background: linear-gradient(135deg, #c91d32 0%, #6a1f3a 100%);
 }
 
 .btn-secondary {
-  background: #6c757d;
-  color: white;
+  background: #242F49;
+  color: #FFA586;
+  border: 1px solid #384358;
 }
 
 .btn-secondary:hover {
-  background: #5a6268;
+  background: #384358;
+  border-color: #FFA586;
 }
 
 input, select {
   width: 100%;
   padding: 12px;
-  border: 2px solid #e0e0e0;
+  border: 2px solid #242F49;
   border-radius: 6px;
   font-size: 16px;
   margin-bottom: 15px;
   transition: border-color 0.3s ease;
+  background: #242F49;
+  color: #e0e0e0;
 }
 
 input:focus, select:focus {
   outline: none;
-  border-color: #667eea;
+  border-color: #B51A2B;
+  background: #161E2F;
+}
+
+input::placeholder {
+  color: #888;
 }
 
 label {
   display: block;
   margin-bottom: 8px;
   font-weight: 600;
-  color: #555;
+  color: #FFA586;
 }
 
 .slider-container {
@@ -93,7 +117,7 @@ label {
   width: 100%;
   height: 8px;
   border-radius: 5px;
-  background: #e0e0e0;
+  background: #242F49;
   outline: none;
   -webkit-appearance: none;
 }
@@ -104,38 +128,41 @@ label {
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: #667eea;
+  background: #B51A2B;
   cursor: pointer;
+  border: 2px solid #FFA586;
 }
 
 .slider::-moz-range-thumb {
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: #667eea;
+  background: #B51A2B;
   cursor: pointer;
-  border: none;
+  border: 2px solid #FFA586;
 }
 
 .slider-value {
   text-align: center;
   font-size: 18px;
   font-weight: bold;
-  color: #667eea;
+  color: #FFA586;
   margin-top: 10px;
 }
 
 .error {
-  color: #dc3545;
-  background: #f8d7da;
+  color: #FFA586;
+  background: rgba(181, 26, 43, 0.2);
+  border: 1px solid #B51A2B;
   padding: 12px;
   border-radius: 6px;
   margin-bottom: 15px;
 }
 
 .success {
-  color: #155724;
-  background: #d4edda;
+  color: #FFA586;
+  background: rgba(84, 26, 46, 0.3);
+  border: 1px solid #541A2E;
   padding: 12px;
   border-radius: 6px;
   margin-bottom: 15px;
@@ -144,5 +171,5 @@ label {
 .loading {
   text-align: center;
   padding: 20px;
-  color: #666;
+  color: #FFA586;
 }
