@@ -1,32 +1,44 @@
 import React, { useState, useEffect } from 'react'
-import axios from 'axios'
+import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom'
+import { authAPI, usersAPI, questionsAPI, answersAPI, matchesAPI } from './services/api'
 import './App.css'
 
-const API_BASE = 'http://localhost:8000/api'
-
 function App() {
-  const [currentView, setCurrentView] = useState('home')
-  const [userId, setUserId] = useState(null)
   const [user, setUser] = useState(null)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [loading, setLoading] = useState(true)
+  const navigate = useNavigate()
+  const location = useLocation()
 
   useEffect(() => {
-    // Check if user is stored in localStorage
-    const storedUserId = localStorage.getItem('userId')
-    if (storedUserId) {
-      setUserId(parseInt(storedUserId))
-      fetchUser(parseInt(storedUserId))
+    // Check if user has a valid token
+    const token = localStorage.getItem('access_token')
+    if (token) {
+      fetchCurrentUser()
+    } else {
+      setLoading(false)
     }
   }, [])
 
-  const fetchUser = async (id) => {
+  const fetchCurrentUser = async () => {
     try {
-      const response = await axios.get(`${API_BASE}/users/${id}`)
-      setUser(response.data)
+      const userData = await authAPI.getCurrentUser()
+      setUser(userData)
     } catch (err) {
-      console.error('Error fetching user:', err)
+      // Token invalid, clear it
+      authAPI.logout()
+      setUser(null)
+    } finally {
+      setLoading(false)
     }
+  }
+
+  const handleLogout = () => {
+    authAPI.logout()
+    setUser(null)
+    navigate('/')
+    clearMessages()
   }
 
   const clearMessages = () => {
@@ -34,167 +46,156 @@ function App() {
     setSuccess('')
   }
 
+  // Protected Route Component
+  const ProtectedRoute = ({ children }) => {
+    if (loading) {
+      return <div className="app"><div className="container"><div className="card loading">Loading...</div></div></div>
+    }
+    if (!user) {
+      return <Navigate to="/login" replace />
+    }
+    return children
+  }
+
+  // Public Route Component (redirects to /survey if already logged in)
+  const PublicRoute = ({ children }) => {
+    if (loading) {
+      return <div className="app"><div className="container"><div className="card loading">Loading...</div></div></div>
+    }
+    if (user && (location.pathname === '/login' || location.pathname === '/register')) {
+      return <Navigate to="/survey" replace />
+    }
+    return children
+  }
+
+  if (loading && !user) {
+    return <div className="app"><div className="container"><div className="card loading">Loading...</div></div></div>
+  }
+
   return (
     <div className="app">
-      <header className="app-header">
-        <h1>🎯 Nemesis</h1>
-        <p className="tagline">Find Your Perfect Enemy Match</p>
-        {user && (
-          <div className="user-info">
-            <span>Welcome, {user.username}!</span>
-            <button onClick={() => {
-              localStorage.removeItem('userId')
-              setUserId(null)
-              setUser(null)
-              setCurrentView('home')
-            }} className="btn btn-secondary" style={{ marginLeft: '10px', padding: '6px 12px' }}>
-              Logout
-            </button>
-          </div>
-        )}
-      </header>
-
       <div className="container">
         {error && <div className="error">{error}</div>}
         {success && <div className="success">{success}</div>}
 
-        {!userId ? (
-          <>
-            {currentView === 'home' && (
-              <HomeView 
-                onRegister={() => setCurrentView('register')}
-                onLogin={() => setCurrentView('login')}
+        <Routes>
+          <Route path="/" element={
+            <PublicRoute>
+              <HomeView />
+            </PublicRoute>
+          } />
+          <Route path="/login" element={
+            <PublicRoute>
+              <LoginView 
+                setUser={setUser}
+                setError={setError}
+                setSuccess={setSuccess}
+                clearMessages={clearMessages}
               />
-            )}
-            {currentView === 'register' && (
+            </PublicRoute>
+          } />
+          <Route path="/register" element={
+            <PublicRoute>
               <RegisterView
-                setUserId={setUserId}
                 setUser={setUser}
                 setError={setError}
                 setSuccess={setSuccess}
-                setCurrentView={setCurrentView}
-                onBack={() => { setCurrentView('home'); clearMessages() }}
+                clearMessages={clearMessages}
               />
-            )}
-            {currentView === 'login' && (
-              <LoginView
-                setUserId={setUserId}
-                setUser={setUser}
-                setError={setError}
-                setSuccess={setSuccess}
-                onBack={() => { setCurrentView('home'); clearMessages() }}
-              />
-            )}
-          </>
-        ) : (
-          <>
-            <nav className="nav-tabs">
-              <button 
-                className={currentView === 'survey' ? 'active' : ''}
-                onClick={() => { setCurrentView('survey'); clearMessages() }}
-              >
-                Answer Questions
-              </button>
-              <button 
-                className={currentView === 'matches' ? 'active' : ''}
-                onClick={() => { setCurrentView('matches'); clearMessages() }}
-              >
-                My Enemies
-              </button>
-            </nav>
-
-            {currentView === 'survey' && (
-              <SurveyView 
-                userId={userId}
-                setError={setError}
-                setSuccess={setSuccess}
-              />
-            )}
-
-            {currentView === 'matches' && (
-              <MatchesView 
-                userId={userId}
-                setError={setError}
-              />
-            )}
-          </>
-        )}
+            </PublicRoute>
+          } />
+          <Route path="/survey" element={
+            <ProtectedRoute>
+              <AuthenticatedLayout user={user} onLogout={handleLogout} clearMessages={clearMessages}>
+                <SurveyView 
+                  setError={setError}
+                  setSuccess={setSuccess}
+                />
+              </AuthenticatedLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/matches" element={
+            <ProtectedRoute>
+              <AuthenticatedLayout user={user} onLogout={handleLogout} clearMessages={clearMessages}>
+                <MatchesView 
+                  setError={setError}
+                />
+              </AuthenticatedLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
       </div>
     </div>
   )
 }
 
-function HomeView({ onRegister, onLogin }) {
+function AuthenticatedLayout({ user, onLogout, clearMessages, children }) {
+  const navigate = useNavigate()
+  const location = useLocation()
+
+  return (
+    <>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+        <nav className="nav-tabs">
+          <button 
+            className={location.pathname === '/survey' ? 'active' : ''}
+            onClick={() => { navigate('/survey'); clearMessages() }}
+          >
+            Answer Questions
+          </button>
+          <button 
+            className={location.pathname === '/matches' ? 'active' : ''}
+            onClick={() => { navigate('/matches'); clearMessages() }}
+          >
+            My Enemies
+          </button>
+        </nav>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+          <span style={{ color: '#FFA586' }}>Welcome, {user.username}!</span>
+          <button className="btn btn-secondary" onClick={onLogout} style={{ padding: '8px 16px' }}>
+            Logout
+          </button>
+        </div>
+      </div>
+      {children}
+    </>
+  )
+}
+
+function HomeView() {
+  const navigate = useNavigate()
+
   return (
     <div className="landing-page">
       <div className="landing-hero">
-        <h1 className="landing-title">🎯 NEMESIS</h1>
-        <p className="landing-quote">"Keep your friends close and your enemies closer"</p>
-        <p className="landing-subtitle">— Sun Tzu, The Art of War</p>
+        <h1 className="landing-title">Nemesis</h1>
+        <p className="landing-quote">Keep your friends close and your enemies closer.</p>
       </div>
 
       <div className="landing-content">
-        <div className="landing-section">
-          <h2>⚔️ Know Your Enemy</h2>
-          <p>
-            In a world where everyone tries to find friends, we take a different approach. 
-            Nemesis matches you with your perfect enemy based on your answers to controversial questions.
-          </p>
-        </div>
+        <p className="landing-description">
+          Answer controversial questions. We'll find your perfect enemy.
+        </p>
+        <p className="landing-subtext">
+          The more you disagree, the better the match.
+        </p>
+      </div>
 
-        <div className="landing-section">
-          <h2>🔥 The More You Disagree, The Better</h2>
-          <p>
-            Answer thought-provoking questions on topics that divide opinions. The greater the difference 
-            in your answers, the higher your incompatibility score. Find someone who challenges your 
-            every belief—your perfect nemesis.
-          </p>
-        </div>
-
-        <div className="landing-section">
-          <h2>🌙 Monthly Matches</h2>
-          <p>
-            Each month, our algorithm analyzes all responses and pairs you with your new enemy. 
-            Receive email notifications when your match is ready. Stay vigilant—your nemesis awaits.
-          </p>
-        </div>
-
-        <div className="landing-features">
-          <div className="feature-card">
-            <div className="feature-icon">💀</div>
-            <h3>Villain Matching</h3>
-            <p>Find your arch-nemesis through algorithmic incompatibility</p>
-          </div>
-          <div className="feature-card">
-            <div className="feature-icon">⚡</div>
-            <h3>Controversial Questions</h3>
-            <p>Answer divisive questions that reveal your true nature</p>
-          </div>
-          <div className="feature-card">
-            <div className="feature-icon">🎭</div>
-            <h3>Monthly Updates</h3>
-            <p>New enemies await you every month</p>
-          </div>
-        </div>
-
-        <div className="landing-cta">
-          <h2>Ready to Meet Your Nemesis?</h2>
-          <p>Join the dark side and discover who your perfect enemy is</p>
-          <div style={{ display: 'flex', gap: '15px', justifyContent: 'center', marginTop: '30px' }}>
-            <button className="btn btn-primary" onClick={onRegister}>
-              Begin Your Journey
-            </button>
-            <button className="btn btn-secondary" onClick={onLogin}>
-              Return to Darkness
-            </button>
-          </div>
-        </div>
+      <div className="landing-cta">
+        <button className="btn btn-primary" onClick={() => navigate('/register')}>
+          Begin
+        </button>
+        <button className="btn btn-secondary" onClick={() => navigate('/login')}>
+          Return
+        </button>
       </div>
     </div>
   )
 }
 
-function RegisterView({ setUserId, setUser, setError, setSuccess, onBack, setCurrentView }) {
+function RegisterView({ setUser, setError, setSuccess, clearMessages }) {
+  const navigate = useNavigate()
   const [formData, setFormData] = useState({
     email: '',
     username: '',
@@ -207,14 +208,10 @@ function RegisterView({ setUserId, setUser, setError, setSuccess, onBack, setCur
     setSuccess('')
 
     try {
-      const response = await axios.post(`${API_BASE}/users/`, formData)
-      setSuccess('Account created successfully! Please answer the questions to get started.')
-      localStorage.setItem('userId', response.data.id)
-      setUserId(response.data.id)
-      setUser(response.data)
-      // Redirect to survey after registration
+      await usersAPI.create(formData)
+      setSuccess('Account created successfully! Please log in to continue.')
       setTimeout(() => {
-        setCurrentView('survey')
+        navigate('/login')
         setSuccess('')
       }, 2000)
     } catch (err) {
@@ -249,14 +246,15 @@ function RegisterView({ setUserId, setUser, setError, setSuccess, onBack, setCur
         />
         <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
           <button type="submit" className="btn btn-primary">Register</button>
-          <button type="button" className="btn btn-secondary" onClick={onBack}>Back</button>
+          <button type="button" className="btn btn-secondary" onClick={() => { navigate('/'); clearMessages() }}>Back</button>
         </div>
       </form>
     </div>
   )
 }
 
-function LoginView({ setUserId, setUser, setError, setSuccess, onBack }) {
+function LoginView({ setUser, setError, setSuccess, clearMessages }) {
+  const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
 
@@ -266,23 +264,38 @@ function LoginView({ setUserId, setUser, setError, setSuccess, onBack }) {
     setSuccess('')
 
     try {
-      // For simplicity, we'll just get users and find by email
-      // In production, you'd have a proper login endpoint
-      const response = await axios.get(`${API_BASE}/users/`)
-      const user = response.data.find(u => u.email === email)
-      
-      if (user) {
-        // In production, verify password here
-        setSuccess('Logged in successfully!')
-        localStorage.setItem('userId', user.id)
-        setUserId(user.id)
-        setUser(user)
-        setTimeout(() => setSuccess(''), 3000)
+      console.log("asda23sd")
+
+      const tokenData = await authAPI.login(email, password)
+      // Store token before making authenticated requests
+      console.log("asdasd")
+
+      if (tokenData && tokenData.access_token) {
+        localStorage.setItem('access_token', tokenData.access_token)
+        
+        // Fetch current user data immediately after storing token
+        try {
+          const userData = await authAPI.getCurrentUser()
+          setUser(userData)
+          setSuccess('Logged in successfully!')
+          setTimeout(() => {
+            navigate('/survey')
+            setSuccess('')
+          }, 1000)
+        } catch (userErr) {
+          // If getting user fails, token might be invalid
+          console.error('Error fetching user:', userErr)
+          localStorage.removeItem('access_token')
+          setError('Failed to authenticate. Please try again.')
+        }
       } else {
-        setError('User not found')
+        setError('Invalid response from server')
       }
     } catch (err) {
-      setError('Failed to login')
+      console.error('Login error:', err)
+      setError(err.response?.data?.detail || 'Failed to login')
+      // Clear token if login fails
+      localStorage.removeItem('access_token')
     }
   }
 
@@ -306,14 +319,14 @@ function LoginView({ setUserId, setUser, setError, setSuccess, onBack }) {
         />
         <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
           <button type="submit" className="btn btn-primary">Login</button>
-          <button type="button" className="btn btn-secondary" onClick={onBack}>Back</button>
+          <button type="button" className="btn btn-secondary" onClick={() => { navigate('/'); clearMessages() }}>Back</button>
         </div>
       </form>
     </div>
   )
 }
 
-function SurveyView({ userId, setError, setSuccess }) {
+function SurveyView({ setError, setSuccess }) {
   const [questions, setQuestions] = useState([])
   const [answers, setAnswers] = useState({})
   const [answeredQuestionIds, setAnsweredQuestionIds] = useState(new Set())
@@ -327,8 +340,8 @@ function SurveyView({ userId, setError, setSuccess }) {
 
   const fetchQuestions = async () => {
     try {
-      const response = await axios.get(`${API_BASE}/questions/?active_only=true`)
-      setQuestions(response.data)
+      const questionsData = await questionsAPI.getAll(true)
+      setQuestions(questionsData)
       setLoading(false)
     } catch (err) {
       setError('Failed to load questions')
@@ -338,10 +351,10 @@ function SurveyView({ userId, setError, setSuccess }) {
 
   const fetchUserAnswers = async () => {
     try {
-      const response = await axios.get(`${API_BASE}/answers/user/${userId}`)
+      const answersData = await answersAPI.getUserAnswers()
       const answerMap = {}
       const answeredIds = new Set()
-      response.data.forEach(ans => {
+      answersData.forEach(ans => {
         answerMap[ans.question_id] = ans.answer_value
         answeredIds.add(ans.question_id)
       })
@@ -368,9 +381,8 @@ function SurveyView({ userId, setError, setSuccess }) {
     }))
 
     try {
-      await axios.post(`${API_BASE}/answers/survey/${userId}`, { answers: answerList })
+      await answersAPI.submitSurvey({ answers: answerList })
       setSuccess('Answers saved successfully!')
-      // Refresh answered questions
       fetchUserAnswers()
       setTimeout(() => setSuccess(''), 3000)
     } catch (err) {
@@ -468,7 +480,7 @@ function SurveyView({ userId, setError, setSuccess }) {
   )
 }
 
-function MatchesView({ userId, setError }) {
+function MatchesView({ setError }) {
   const [matches, setMatches] = useState([])
   const [loading, setLoading] = useState(true)
 
@@ -478,8 +490,8 @@ function MatchesView({ userId, setError }) {
 
   const fetchMatches = async () => {
     try {
-      const response = await axios.get(`${API_BASE}/matches/user/${userId}`)
-      setMatches(response.data)
+      const matchesData = await matchesAPI.getUserMatches()
+      setMatches(matchesData)
       setLoading(false)
     } catch (err) {
       setError('Failed to load matches')

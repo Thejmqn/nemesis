@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.database import engine, Base
-from app.routers import users, questions, answers, matches
+from app.routers import users, questions, answers, matches, auth
 from app.scheduler import scheduler
 
 # Create database tables
@@ -19,6 +19,7 @@ app.add_middleware(
 )
 
 # Include routers
+app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
 app.include_router(users.router, prefix="/api/users", tags=["users"])
 app.include_router(questions.router, prefix="/api/questions", tags=["questions"])
 app.include_router(answers.router, prefix="/api/answers", tags=["answers"])

@@ -4,15 +4,16 @@ from sqlalchemy import and_, or_
 from app.database import get_db
 from app.models import Match, User, Answer
 from app.schemas import MatchResponse
+from app.routers.auth import get_current_user
 from typing import List
 from app.matching import calculate_match_score, find_enemy_match
 
 router = APIRouter()
 
-@router.get("/user/{user_id}", response_model=List[MatchResponse])
-def get_user_matches(user_id: int, db: Session = Depends(get_db)):
+@router.get("/user", response_model=List[MatchResponse])
+def get_user_matches(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     # Get all matches for the user
-    matches = db.query(Match).filter(Match.user_id == user_id).all()
+    matches = db.query(Match).filter(Match.user_id == current_user.id).all()
     
     result = []
     for match in matches:
@@ -28,9 +29,9 @@ def get_user_matches(user_id: int, db: Session = Depends(get_db)):
     
     return result
 
-@router.get("/user/{user_id}/latest", response_model=MatchResponse)
-def get_latest_match(user_id: int, db: Session = Depends(get_db)):
-    match = db.query(Match).filter(Match.user_id == user_id).order_by(Match.matched_at.desc()).first()
+@router.get("/user/latest", response_model=MatchResponse)
+def get_latest_match(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    match = db.query(Match).filter(Match.user_id == current_user.id).order_by(Match.matched_at.desc()).first()
     if not match:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -47,17 +48,10 @@ def get_latest_match(user_id: int, db: Session = Depends(get_db)):
         matched_at=match.matched_at
     )
 
-@router.post("/user/{user_id}/find-enemy")
-def find_enemy(user_id: int, db: Session = Depends(get_db)):
+@router.post("/user/find-enemy")
+def find_enemy(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """Manually trigger enemy matching for a user"""
-    user = db.query(User).filter(User.id == user_id).first()
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found"
-        )
-    
-    enemy_id, match_score = find_enemy_match(user_id, db)
+    enemy_id, match_score = find_enemy_match(current_user.id, db)
     if not enemy_id:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -66,7 +60,7 @@ def find_enemy(user_id: int, db: Session = Depends(get_db)):
     
     # Create match record
     match = Match(
-        user_id=user_id,
+        user_id=current_user.id,
         enemy_id=enemy_id,
         match_score=match_score
     )

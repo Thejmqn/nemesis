@@ -1,14 +1,15 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.database import get_db
-from app.models import Answer, Question
+from app.models import Answer, Question, User
 from app.schemas import AnswerCreate, AnswerResponse, AnswerUpdate, SurveyResponse
+from app.routers.auth import get_current_user
 from typing import List
 
 router = APIRouter()
 
 @router.post("/", response_model=AnswerResponse, status_code=status.HTTP_201_CREATED)
-def create_answer(answer: AnswerCreate, user_id: int, db: Session = Depends(get_db)):
+def create_answer(answer: AnswerCreate, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     # Validate answer value (1-10)
     if answer.answer_value < 1 or answer.answer_value > 10:
         raise HTTPException(
@@ -26,7 +27,7 @@ def create_answer(answer: AnswerCreate, user_id: int, db: Session = Depends(get_
     
     # Check if answer already exists (update if so)
     existing_answer = db.query(Answer).filter(
-        Answer.user_id == user_id,
+        Answer.user_id == current_user.id,
         Answer.question_id == answer.question_id
     ).first()
     
@@ -38,7 +39,7 @@ def create_answer(answer: AnswerCreate, user_id: int, db: Session = Depends(get_
     
     # Create new answer
     db_answer = Answer(
-        user_id=user_id,
+        user_id=current_user.id,
         question_id=answer.question_id,
         answer_value=answer.answer_value
     )
@@ -47,8 +48,8 @@ def create_answer(answer: AnswerCreate, user_id: int, db: Session = Depends(get_
     db.refresh(db_answer)
     return db_answer
 
-@router.post("/survey/{user_id}", response_model=List[AnswerResponse], status_code=status.HTTP_201_CREATED)
-def submit_survey(survey: SurveyResponse, user_id: int, db: Session = Depends(get_db)):
+@router.post("/survey", response_model=List[AnswerResponse], status_code=status.HTTP_201_CREATED)
+def submit_survey(survey: SurveyResponse, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     answers = []
     for answer_data in survey.answers:
         # Validate answer value
@@ -68,7 +69,7 @@ def submit_survey(survey: SurveyResponse, user_id: int, db: Session = Depends(ge
         
         # Update or create answer
         existing_answer = db.query(Answer).filter(
-            Answer.user_id == user_id,
+            Answer.user_id == current_user.id,
             Answer.question_id == answer_data.question_id
         ).first()
         
@@ -77,7 +78,7 @@ def submit_survey(survey: SurveyResponse, user_id: int, db: Session = Depends(ge
             answers.append(existing_answer)
         else:
             db_answer = Answer(
-                user_id=user_id,
+                user_id=current_user.id,
                 question_id=answer_data.question_id,
                 answer_value=answer_data.answer_value
             )
@@ -89,9 +90,9 @@ def submit_survey(survey: SurveyResponse, user_id: int, db: Session = Depends(ge
         db.refresh(answer)
     return answers
 
-@router.get("/user/{user_id}", response_model=List[AnswerResponse])
-def get_user_answers(user_id: int, db: Session = Depends(get_db)):
-    answers = db.query(Answer).filter(Answer.user_id == user_id).all()
+@router.get("/user", response_model=List[AnswerResponse])
+def get_user_answers(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    answers = db.query(Answer).filter(Answer.user_id == current_user.id).all()
     return answers
 
 @router.put("/{answer_id}", response_model=AnswerResponse)

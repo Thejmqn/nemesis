@@ -10,9 +10,9 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: linear-gradient(135deg, #161E2F 0%, #242F49 50%, #541A2E 100%);
+  background: #0a0002;
   min-height: 100vh;
-  color: #e0e0e0;
+  color: #f0f0f0;
 }
 
 code {
@@ -27,13 +27,13 @@ code {
 }
 
 .card {
-  background: #384358;
+  background: #1a0a0f;
   border-radius: 12px;
   padding: 30px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
   margin-bottom: 20px;
-  border: 1px solid #242F49;
-  color: #e0e0e0;
+  border: 1px solid rgba(181, 26, 43, 0.3);
+  color: #f0f0f0;
 }
 
 .card h2 {
@@ -58,54 +58,70 @@ code {
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #B51A2B 0%, #541A2E 100%);
-  color: white;
+  background: transparent;
+  color: #FFA586;
   border: 1px solid #FFA586;
+  font-weight: 300;
+  letter-spacing: 1px;
 }
 
 .btn-primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(181, 26, 43, 0.6);
-  background: linear-gradient(135deg, #c91d32 0%, #6a1f3a 100%);
+  background: #FFA586;
+  color: #0a0002;
+  transform: translateY(-1px);
 }
 
 .btn-secondary {
-  background: #242F49;
-  color: #FFA586;
-  border: 1px solid #384358;
+  background: transparent;
+  color: #b0b0b0;
+  border: 1px solid #b0b0b0;
+  font-weight: 300;
+  letter-spacing: 1px;
 }
 
 .btn-secondary:hover {
-  background: #384358;
-  border-color: #FFA586;
+  background: #b0b0b0;
+  color: #0a0002;
+  transform: translateY(-1px);
 }
 
 input, select {
   width: 100%;
   padding: 12px;
-  border: 2px solid #242F49;
+  border: 2px solid rgba(181, 26, 43, 0.3);
   border-radius: 6px;
   font-size: 16px;
   margin-bottom: 15px;
   transition: border-color 0.3s ease;
-  background: #242F49;
-  color: #e0e0e0;
+  background: #0f0005;
+  color: #f0f0f0;
 }
 
 input:focus, select:focus {
   outline: none;
   border-color: #B51A2B;
-  background: #161E2F;
+  background: #150008;
 }
 
 input::placeholder {
-  color: #888;
+  color: #666;
 }
 
 label {
   display: block;
   margin-bottom: 8px;
   font-weight: 600;
+  color: #FFA586;
+}
+
+.card h2 {
+  color: #FFA586;
+  margin-bottom: 20px;
+  border-bottom: 2px solid rgba(181, 26, 43, 0.5);
+  padding-bottom: 10px;
+}
+
+.card h3 {
   color: #FFA586;
 }
 
@@ -117,7 +133,7 @@ label {
   width: 100%;
   height: 8px;
   border-radius: 5px;
-  background: #242F49;
+  background: #0f0005;
   outline: none;
   -webkit-appearance: none;
 }
@@ -161,8 +177,8 @@ label {
 
 .success {
   color: #FFA586;
-  background: rgba(84, 26, 46, 0.3);
-  border: 1px solid #541A2E;
+  background: rgba(181, 26, 43, 0.15);
+  border: 1px solid rgba(181, 26, 43, 0.5);
   padding: 12px;
   border-radius: 6px;
   margin-bottom: 15px;
