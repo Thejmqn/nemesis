@@ -1,12 +1,14 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_
 from app.models import User, Answer, Match
+from app.services.question_service import get_question_by_id
 from typing import Optional, Tuple
 
 def calculate_match_score(user1_id: int, user2_id: int, db: Session) -> float:
     """
     Calculate enemy match score based on answer differences.
     Higher score = more incompatible = better enemy match
+    Handles different question types: scale, multiple_choice, boolean
     """
     # Get all answers for both users
     user1_answers = db.query(Answer).filter(Answer.user_id == user1_id).all()
@@ -24,13 +26,40 @@ def calculate_match_score(user1_id: int, user2_id: int, db: Session) -> float:
     
     # Calculate total difference (higher difference = better enemy match)
     total_difference = 0.0
-    for question_id in common_questions:
-        difference = abs(user1_dict[question_id] - user2_dict[question_id])
-        total_difference += difference
+    max_possible_difference = 0.0
     
-    # Normalize by number of common questions and scale (max difference per question is 9)
-    average_difference = total_difference / len(common_questions)
-    normalized_score = (average_difference / 9.0) * 100  # Scale to 0-100
+    for question_id in common_questions:
+        question = get_question_by_id(question_id)
+        if not question:
+            continue
+        
+        question_type = question.get('type', 'scale')
+        val1 = user1_dict[question_id]
+        val2 = user2_dict[question_id]
+        
+        if question_type == 'scale':
+            min_val = question.get('min', 1)
+            max_val = question.get('max', 10)
+            difference = abs(val1 - val2)
+            max_diff = max_val - min_val
+            total_difference += difference
+            max_possible_difference += max_diff
+        elif question_type == 'multiple_choice':
+            # For multiple choice, difference is 1 if different, 0 if same
+            difference = 1 if val1 != val2 else 0
+            total_difference += difference
+            max_possible_difference += 1
+        elif question_type == 'boolean':
+            # For boolean, difference is 1 if different, 0 if same
+            difference = 1 if val1 != val2 else 0
+            total_difference += difference
+            max_possible_difference += 1
+    
+    if max_possible_difference == 0:
+        return 0.0
+    
+    # Normalize by max possible difference
+    normalized_score = (total_difference / max_possible_difference) * 100  # Scale to 0-100
     
     return round(normalized_score, 2)
 

@@ -85,7 +85,12 @@ code {
   transform: translateY(-1px);
 }
 
-input, select {
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+textarea,
+select {
   width: 100%;
   padding: 12px;
   border: 2px solid rgba(181, 26, 43, 0.3);
@@ -97,7 +102,21 @@ input, select {
   color: #f0f0f0;
 }
 
-input:focus, select:focus {
+input[type="radio"],
+input[type="checkbox"] {
+  width: auto;
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: transparent;
+}
+
+textarea:focus,
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus,
+input[type="number"]:focus,
+select:focus {
   outline: none;
   border-color: #B51A2B;
   background: #150008;
@@ -136,6 +155,8 @@ label {
   background: #0f0005;
   outline: none;
   -webkit-appearance: none;
+  border: none;
+  padding: 0;
 }
 
 .slider::-webkit-slider-thumb {
@@ -188,4 +209,22 @@ label {
   text-align: center;
   padding: 20px;
   color: #FFA586;
+}
+
+.input-error {
+  border-color: #B51A2B !important;
+}
+
+.field-error {
+  margin-top: -10px;
+  margin-bottom: 15px;
+  color: #ffb4b4;
+  font-size: 13px;
+}
+
+.field-hint {
+  margin-top: -10px;
+  margin-bottom: 10px;
+  color: #b0b0b0;
+  font-size: 13px;
 }

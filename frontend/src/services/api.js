@@ -2,6 +2,29 @@ import axios from 'axios'
 
 const API_BASE = 'http://localhost:8000/api'
 
+export const getApiErrorMessage = (error, fallback = 'Something went wrong') => {
+  if (!error) return fallback
+
+  // Axios network error (no response)
+  if (axios.isAxiosError?.(error) && !error.response) {
+    if (error.code === 'ECONNABORTED') return 'Request timed out. Please try again.'
+    return 'Unable to reach the server. Is the backend running?'
+  }
+
+  const status = error.response?.status
+  const detail = error.response?.data?.detail
+
+  if (typeof detail === 'string' && detail.trim().length > 0) return detail
+
+  if (status === 400) return 'Please check your input and try again.'
+  if (status === 401) return 'Your session has expired. Please log in again.'
+  if (status === 403) return 'You do not have permission to do that.'
+  if (status === 404) return 'Requested resource was not found.'
+  if (status >= 500) return 'Server error. Please try again later.'
+
+  return fallback
+}
+
 // Create axios instance with default config
 const api = axios.create({
   baseURL: API_BASE,
@@ -31,7 +54,7 @@ api.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       localStorage.removeItem('access_token')
-      window.location.href = '/'
+      //window.location.href = '/login'
     }
     return Promise.reject(error)
   }

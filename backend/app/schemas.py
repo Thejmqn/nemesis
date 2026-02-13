@@ -28,6 +28,12 @@ class UserResponse(UserBase):
 # Question schemas
 class QuestionBase(BaseModel):
     text: str
+    type: str = "scale"  # scale, multiple_choice, boolean
+    min: Optional[int] = 1
+    max: Optional[int] = 10
+    choices: Optional[List[str]] = None
+    true_label: Optional[str] = None
+    false_label: Optional[str] = None
 
 class QuestionCreate(QuestionBase):
     pass
@@ -35,7 +41,6 @@ class QuestionCreate(QuestionBase):
 class QuestionResponse(QuestionBase):
     id: int
     is_active: bool
-    created_at: datetime
     
     class Config:
         from_attributes = True

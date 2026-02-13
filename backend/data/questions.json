@@ -1,0 +1,74 @@
+[
+  {
+    "id": 1,
+    "text": "Pineapple belongs on pizza",
+    "type": "scale",
+    "min": 1,
+    "max": 10,
+    "is_active": true
+  },
+  {
+    "id": 2,
+    "text": "The Oxford comma is unnecessary",
+    "type": "scale",
+    "min": 1,
+    "max": 10,
+    "is_active": true
+  },
+  {
+    "id": 3,
+    "text": "Hot dogs are sandwiches",
+    "type": "scale",
+    "min": 1,
+    "max": 10,
+    "is_active": true
+  },
+  {
+    "id": 4,
+    "text": "What is the best programming language?",
+    "type": "multiple_choice",
+    "choices": [
+      "Python",
+      "JavaScript",
+      "Java",
+      "C++",
+      "Go",
+      "Rust"
+    ],
+    "is_active": true
+  },
+  {
+    "id": 5,
+    "text": "Is water wet?",
+    "type": "boolean",
+    "true_label": "Yes",
+    "false_label": "No",
+    "is_active": true
+  },
+  {
+    "id": 6,
+    "text": "Cereal is a soup",
+    "type": "scale",
+    "min": 1,
+    "max": 10,
+    "is_active": true
+  },
+  {
+    "id": 7,
+    "text": "Which is better?",
+    "type": "multiple_choice",
+    "choices": [
+      "Tabs",
+      "Spaces"
+    ],
+    "is_active": true
+  },
+  {
+    "id": 8,
+    "text": "Should AI be regulated?",
+    "type": "boolean",
+    "true_label": "Yes, regulate it",
+    "false_label": "No, let it be free",
+    "is_active": true
+  }
+]
