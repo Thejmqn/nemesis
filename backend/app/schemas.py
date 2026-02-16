@@ -80,3 +80,15 @@ class MatchResponse(BaseModel):
 # Survey response
 class SurveyResponse(BaseModel):
     answers: List[AnswerCreate]
+
+
+class SurveyQuestionSummary(BaseModel):
+    id: int
+    text: str
+    answered: bool
+    answer_value: Optional[int] = None
+
+
+class SurveyQuestionResponse(QuestionResponse):
+    answered: bool
+    answer_value: Optional[int] = None

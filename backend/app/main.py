@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.database import engine, Base
-from app.routers import users, questions, answers, matches, auth
+from app.routers import users, questions, answers, matches, auth, survey
 from app.scheduler import scheduler
 
 # Create database tables
@@ -23,6 +23,7 @@ app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
 app.include_router(users.router, prefix="/api/users", tags=["users"])
 app.include_router(questions.router, prefix="/api/questions", tags=["questions"])
 app.include_router(answers.router, prefix="/api/answers", tags=["answers"])
+app.include_router(survey.router, prefix="/api/survey", tags=["survey"])
 app.include_router(matches.router, prefix="/api/matches", tags=["matches"])
 
 # Start scheduler

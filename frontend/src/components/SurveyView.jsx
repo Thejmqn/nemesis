@@ -1,55 +1,138 @@
 import { useMemo, useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { questionsAPI, answersAPI } from '../services/api'
+import { surveyAPI } from '../services/api'
 
 export default function SurveyView({ setError = () => {}, setSuccess = () => {} }) {
   const navigate = useNavigate()
-  const [questions, setQuestions] = useState([])
+  const [questionList, setQuestionList] = useState([])
+  const [questionDetailsById, setQuestionDetailsById] = useState({})
   const [answers, setAnswers] = useState({})
   const [savedAnswers, setSavedAnswers] = useState({})
   const [answeredQuestionIds, setAnsweredQuestionIds] = useState(new Set())
   const [currentQuestionId, setCurrentQuestionId] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [loadingQuestion, setLoadingQuestion] = useState(false)
   const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
-    fetchQuestions()
-    fetchUserAnswers()
+    fetchSurveyQuestions()
   }, [])
 
-  const fetchQuestions = async () => {
+  const fetchSurveyQuestions = async () => {
     try {
-      const questionsData = await questionsAPI.getAll(true)
-      if (!Array.isArray(questionsData)) {
+      const items = await surveyAPI.listQuestions(true)
+      if (!Array.isArray(items)) {
         setError('Failed to load questions')
-        setQuestions([])
+        setQuestionList([])
         setLoading(false)
         return
       }
-      setQuestions(questionsData)
+
+      const answerMap = {}
+      const answeredIds = new Set()
+      items.forEach((item) => {
+        if (!item) return
+        if (item.answered) {
+          answeredIds.add(item.id)
+          if (typeof item.answer_value === 'number' && !Number.isNaN(item.answer_value)) {
+            answerMap[item.id] = item.answer_value
+          }
+        }
+      })
+
+      setQuestionList(items)
+      setAnswers(answerMap)
+      setSavedAnswers(answerMap)
+      setAnsweredQuestionIds(answeredIds)
       setLoading(false)
-    } catch (err) {
+    } catch {
       setError('Failed to load questions')
       setLoading(false)
     }
   }
 
-  const fetchUserAnswers = async () => {
-    try {
-      const answersData = await answersAPI.getUserAnswers()
-      const answerMap = {}
-      const answeredIds = new Set()
-      answersData.forEach(ans => {
-        answerMap[ans.question_id] = ans.answer_value
-        answeredIds.add(ans.question_id)
-      })
-      setAnswers(answerMap)
-      setSavedAnswers(answerMap)
-      setAnsweredQuestionIds(answeredIds)
-    } catch (err) {
-      console.error('Error fetching answers:', err)
+  useEffect(() => {
+    if (questionList.length === 0) return
+    if (currentQuestionId !== null) {
+      const stillExists = questionList.some(q => q.id === currentQuestionId)
+      if (stillExists) return
     }
-  }
+
+    const firstUnanswered = questionList.find(q => !q.answered)
+    setCurrentQuestionId((firstUnanswered ?? questionList[0]).id)
+  }, [questionList, currentQuestionId])
+
+  useEffect(() => {
+    if (currentQuestionId === null) return
+    if (Object.prototype.hasOwnProperty.call(questionDetailsById, currentQuestionId)) return
+
+    let cancelled = false
+    setLoadingQuestion(true)
+    surveyAPI.getQuestion(currentQuestionId).then((q) => {
+      if (cancelled) return
+
+      setQuestionDetailsById(prev => ({ ...prev, [currentQuestionId]: q }))
+
+      if (q?.answered) {
+        setAnsweredQuestionIds((prev) => {
+          const next = new Set(prev)
+          next.add(currentQuestionId)
+          return next
+        })
+      }
+
+      if (typeof q?.answer_value === 'number' && !Number.isNaN(q.answer_value)) {
+        setAnswers((prev) => ({ ...prev, [currentQuestionId]: prev[currentQuestionId] ?? q.answer_value }))
+        setSavedAnswers((prev) => ({ ...prev, [currentQuestionId]: q.answer_value }))
+      }
+
+      setLoadingQuestion(false)
+    }).catch(() => {
+      if (cancelled) return
+      setError('Failed to load question')
+      setLoadingQuestion(false)
+    })
+
+    return () => { cancelled = true }
+  }, [currentQuestionId, questionDetailsById, setError])
+
+  const orderedQuestions = useMemo(() => questionList, [questionList])
+  const totalQuestions = orderedQuestions.length
+
+  const overallIndexById = useMemo(() => {
+    const map = {}
+    orderedQuestions.forEach((q, idx) => {
+      map[q.id] = idx
+    })
+    return map
+  }, [orderedQuestions])
+
+  const overallIndex = useMemo(() => {
+    if (currentQuestionId === null) return 0
+    const idx = orderedQuestions.findIndex(q => q.id === currentQuestionId)
+    return idx === -1 ? 0 : idx
+  }, [orderedQuestions, currentQuestionId])
+
+  const currentQuestion = currentQuestionId === null ? null : (questionDetailsById[currentQuestionId] ?? null)
+
+  const answeredCount = useMemo(() => {
+    return orderedQuestions.reduce((count, q) => (answeredQuestionIds.has(q.id) ? count + 1 : count), 0)
+  }, [orderedQuestions, answeredQuestionIds])
+
+  const progressPercent = totalQuestions === 0 ? 0 : Math.round((answeredCount / totalQuestions) * 100)
+
+  const unansweredIds = useMemo(() => {
+    return orderedQuestions.filter(q => !answeredQuestionIds.has(q.id)).map(q => q.id)
+  }, [orderedQuestions, answeredQuestionIds])
+
+  const answeredIds = useMemo(() => {
+    return orderedQuestions.filter(q => answeredQuestionIds.has(q.id)).map(q => q.id)
+  }, [orderedQuestions, answeredQuestionIds])
+
+  const firstUnansweredId = useMemo(() => {
+    const first = orderedQuestions.find(q => !answeredQuestionIds.has(q.id))
+    return first?.id ?? null
+  }, [orderedQuestions, answeredQuestionIds])
 
   const handleAnswerChange = (questionId, value) => {
     setAnswers({ ...answers, [questionId]: value })
@@ -81,7 +164,6 @@ export default function SurveyView({ setError = () => {}, setSuccess = () => {} 
 
     const isAnswered = answeredQuestionIds.has(question.id)
     const dirty = isQuestionDirty(question)
-
     if (isAnswered && !dirty) return { ok: true, saved: false }
 
     const hasDraft = hasDraftValue(question)
@@ -105,12 +187,13 @@ export default function SurveyView({ setError = () => {}, setSuccess = () => {} 
     }
 
     try {
-      await answersAPI.create({ question_id: question.id, answer_value: value })
+      await surveyAPI.upsertAnswer(question.id, value)
       const nextSaved = { ...savedAnswers, [question.id]: value }
       const nextAnsweredIds = new Set(answeredQuestionIds)
       nextAnsweredIds.add(question.id)
       setSavedAnswers(nextSaved)
       setAnsweredQuestionIds(nextAnsweredIds)
+      setQuestionList((prev) => prev.map((q) => (q.id === question.id ? { ...q, answered: true, answer_value: value } : q)))
       setSuccess('Saved')
       setTimeout(() => setSuccess(''), 800)
       return { ok: true, saved: true, nextAnsweredIds }
@@ -122,7 +205,6 @@ export default function SurveyView({ setError = () => {}, setSuccess = () => {} 
 
   const renderQuestionInput = (question) => {
     if (question.type === 'scale') {
-      // Scale question (1-10 slider; hide numeric value until user interacts or it was previously saved)
       const { min, max } = getScaleBounds(question)
       const value = getScaleDisplayedValue(question)
       const showValue = hasDraftValue(question) || answeredQuestionIds.has(question.id)
@@ -146,8 +228,9 @@ export default function SurveyView({ setError = () => {}, setSuccess = () => {} 
           )}
         </div>
       )
-    } else if (question.type === 'multiple_choice') {
-      // Multiple choice question
+    }
+
+    if (question.type === 'multiple_choice') {
       const choices = Array.isArray(question.choices) ? question.choices : []
       if (choices.length === 0) {
         return (
@@ -176,8 +259,9 @@ export default function SurveyView({ setError = () => {}, setSuccess = () => {} 
           ))}
         </div>
       )
-    } else if (question.type === 'boolean') {
-      // Boolean/Yes-No question
+    }
+
+    if (question.type === 'boolean') {
       return (
         <div className="option-list option-list--horizontal">
           <label className={`option-row ${answers[question.id] === 1 ? 'option-row--selected' : ''}`}>
@@ -205,7 +289,7 @@ export default function SurveyView({ setError = () => {}, setSuccess = () => {} 
         </div>
       )
     }
-    // Default to scale
+
     const { min, max } = getScaleBounds(question)
     const value = getScaleDisplayedValue(question)
     const showValue = hasDraftValue(question) || answeredQuestionIds.has(question.id)
@@ -231,74 +315,66 @@ export default function SurveyView({ setError = () => {}, setSuccess = () => {} 
     )
   }
 
-  const orderedQuestions = useMemo(() => questions, [questions])
-
-  useEffect(() => {
-    if (orderedQuestions.length === 0) return
-    if (currentQuestionId === null) {
-      setCurrentQuestionId(orderedQuestions[0].id)
-      return
-    }
-    const stillExists = orderedQuestions.some(q => q.id === currentQuestionId)
-    if (!stillExists) setCurrentQuestionId(orderedQuestions[0].id)
-  }, [orderedQuestions, currentQuestionId])
-
-  const currentIndex = useMemo(() => {
-    if (currentQuestionId === null) return 0
-    const idx = orderedQuestions.findIndex(q => q.id === currentQuestionId)
-    return idx === -1 ? 0 : idx
-  }, [orderedQuestions, currentQuestionId])
-
-  const currentQuestion = orderedQuestions[currentIndex]
-  const totalQuestions = orderedQuestions.length
-  const answeredCount = useMemo(() => {
-    return orderedQuestions.reduce((count, q) => (answeredQuestionIds.has(q.id) ? count + 1 : count), 0)
-  }, [orderedQuestions, answeredQuestionIds])
-  const progressPercent = totalQuestions === 0 ? 0 : Math.round((answeredCount / totalQuestions) * 100)
-
-  const goPrev = () => {
-    if (currentIndex <= 0) return
-    setCurrentQuestionId(orderedQuestions[currentIndex - 1].id)
-  }
-
-  const firstUnansweredId = useMemo(() => {
-    const first = orderedQuestions.find(q => !answeredQuestionIds.has(q.id))
-    return first?.id ?? null
-  }, [orderedQuestions, answeredQuestionIds])
-
   const goToFirstUnanswered = () => {
     if (firstUnansweredId === null) return
     setCurrentQuestionId(firstUnansweredId)
+  }
+
+  const goPrev = () => {
+    if (currentQuestionId === null) return
+    const inAnswered = answeredQuestionIds.has(currentQuestionId)
+    const groupIds = inAnswered ? answeredIds : unansweredIds
+    const idx = groupIds.findIndex(id => id === currentQuestionId)
+    if (idx <= 0) return
+    setCurrentQuestionId(groupIds[idx - 1])
   }
 
   const handleNext = async () => {
     if (!currentQuestion) return
 
     setSubmitting(true)
+    const wasAnswered = answeredQuestionIds.has(currentQuestion.id)
     const result = await saveAnswerIfNeeded(currentQuestion)
     if (!result.ok) {
       setSubmitting(false)
       return
     }
 
-    const nextIndex = currentIndex + 1
-    if (nextIndex < totalQuestions) {
-      setCurrentQuestionId(orderedQuestions[nextIndex].id)
-      setSubmitting(false)
-      return
-    }
-
-    // Finish
     const nextAnsweredIds = result.nextAnsweredIds ?? answeredQuestionIds
-    const nextAnsweredCount = orderedQuestions.reduce((count, q) => (nextAnsweredIds.has(q.id) ? count + 1 : count), 0)
+    const nextUnanswered = orderedQuestions.filter(q => !nextAnsweredIds.has(q.id)).map(q => q.id)
+    const nextAnswered = orderedQuestions.filter(q => nextAnsweredIds.has(q.id)).map(q => q.id)
+    const nextAnsweredCount = nextAnswered.length
+
     if (nextAnsweredCount === totalQuestions) {
       setSuccess('All answers saved!')
       setTimeout(() => {
         navigate('/matches')
         setSuccess('')
       }, 600)
-    } else if (firstUnansweredId !== null) {
-      setCurrentQuestionId(firstUnansweredId)
+      setSubmitting(false)
+      return
+    }
+
+    if (!wasAnswered) {
+      const afterCurrent = orderedQuestions.slice(overallIndex + 1).map(q => q.id)
+      const nextId = afterCurrent.find(id => !nextAnsweredIds.has(id)) ?? nextUnanswered[0] ?? null
+      if (nextId !== null) setCurrentQuestionId(nextId)
+      setSubmitting(false)
+      return
+    }
+
+    const answeredIdx = nextAnswered.findIndex(id => id === currentQuestion.id)
+    const nextAnsweredId = answeredIdx === -1 ? null : (nextAnswered[answeredIdx + 1] ?? null)
+    if (nextAnsweredId !== null) {
+      setCurrentQuestionId(nextAnsweredId)
+      setSubmitting(false)
+      return
+    }
+
+    if (nextUnanswered[0] !== undefined) {
+      setCurrentQuestionId(nextUnanswered[0])
+      setSubmitting(false)
+      return
     }
 
     setSubmitting(false)
@@ -308,75 +384,139 @@ export default function SurveyView({ setError = () => {}, setSuccess = () => {} 
     return <div className="card loading">Loading questions...</div>
   }
 
-  if (questions.length === 0) {
+  if (questionList.length === 0) {
     return <div className="card">No questions available yet. Check back later!</div>
   }
+
+  const inAnswered = currentQuestionId !== null && answeredQuestionIds.has(currentQuestionId)
+  const groupIds = inAnswered ? answeredIds : unansweredIds
+  const groupIndex = currentQuestionId === null ? -1 : groupIds.findIndex(id => id === currentQuestionId)
+  const isLastInGroup = groupIndex !== -1 && groupIndex >= groupIds.length - 1
+
+  const currentTextFallback = currentQuestionId === null
+    ? ''
+    : (orderedQuestions.find(q => q.id === currentQuestionId)?.text ?? '')
 
   return (
     <div className="card">
       <h2>Answer Questions</h2>
       <p className="survey-intro">
-        Answer questions one at a time. Answers save when you click Next/Finish.
+        Pick a question from the list. Answers save when you click Next/Finish.
       </p>
-      <div>
-        <div className="survey-topbar">
-          <div className="survey-jump">
-            <button
-              type="button"
-              className="btn btn-secondary"
-              onClick={goToFirstUnanswered}
-              disabled={firstUnansweredId === null}
-              title="Jump to the first unanswered question"
-            >
-              First Unanswered
-            </button>
+
+      <div className="survey-layout">
+        <div className="survey-sidebar">
+          <div className="survey-list-section">
+            <div className="survey-list-title">Unanswered ({unansweredIds.length})</div>
+            <div className="survey-list">
+              {orderedQuestions.filter(q => !answeredQuestionIds.has(q.id)).map((q) => (
+                <button
+                  key={q.id}
+                  type="button"
+                  className={`survey-list-item ${q.id === currentQuestionId ? 'survey-list-item--active' : ''}`}
+                  onClick={() => setCurrentQuestionId(q.id)}
+                  disabled={submitting}
+                  title={q.text}
+                >
+                  <span className="survey-list-item-meta">Q{(overallIndexById[q.id] ?? 0) + 1}</span>
+                  <span className="survey-list-item-text">{q.text}</span>
+                </button>
+              ))}
+              {unansweredIds.length === 0 && (
+                <div className="survey-list-empty">All questions answered.</div>
+              )}
+            </div>
           </div>
 
-          <div className="survey-progress">
-            <div className="survey-progress-meta">
-              <span>
-                Answered {answeredCount} / {totalQuestions}
-              </span>
-              <span>
-                {progressPercent}% • Q{Math.min(currentIndex + 1, totalQuestions)} / {totalQuestions}
-              </span>
-            </div>
-            <div className="survey-progress-bar" aria-hidden="true">
-              <div className="survey-progress-fill" style={{ width: `${progressPercent}%` }} />
+          <div className="survey-list-section">
+            <div className="survey-list-title">Answered ({answeredIds.length})</div>
+            <div className="survey-list">
+              {orderedQuestions.filter(q => answeredQuestionIds.has(q.id)).map((q) => (
+                <button
+                  key={q.id}
+                  type="button"
+                  className={`survey-list-item ${q.id === currentQuestionId ? 'survey-list-item--active' : ''}`}
+                  onClick={() => setCurrentQuestionId(q.id)}
+                  disabled={submitting}
+                  title={q.text}
+                >
+                  <span className="survey-list-item-meta">Q{(overallIndexById[q.id] ?? 0) + 1}</span>
+                  <span className="survey-list-item-text">{q.text}</span>
+                </button>
+              ))}
             </div>
           </div>
         </div>
 
-        {currentQuestion && (
-          <div
-            key={currentQuestion.id}
-            className={`question-item ${answeredQuestionIds.has(currentQuestion.id) ? 'question-item--answered' : 'question-item--new'}`}
-          >
-            <div className="question-header">
-              <div className="question-text">{currentQuestion.text}</div>
-              <div className="question-status">
-                {!answeredQuestionIds.has(currentQuestion.id) && <span className="pill pill--new">Unanswered</span>}
-                {answeredQuestionIds.has(currentQuestion.id) && <span className="pill pill--saved">Answered</span>}
-                {isQuestionDirty(currentQuestion) && <span className="pill pill--dirty">Unsaved changes</span>}
+        <div className="survey-main">
+          <div className="survey-topbar">
+            <div className="survey-jump">
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={goToFirstUnanswered}
+                disabled={firstUnansweredId === null || submitting}
+                title="Jump to the first unanswered question"
+              >
+                First Unanswered
+              </button>
+            </div>
+
+            <div className="survey-progress">
+              <div className="survey-progress-meta">
+                <span>
+                  Answered {answeredCount} / {totalQuestions}
+                </span>
+                <span>
+                  {progressPercent}% • Q{Math.min(overallIndex + 1, totalQuestions)} / {totalQuestions}
+                </span>
+              </div>
+              <div className="survey-progress-bar" aria-hidden="true">
+                <div className="survey-progress-fill" style={{ width: `${progressPercent}%` }} />
               </div>
             </div>
-            {renderQuestionInput(currentQuestion)}
+          </div>
+
+          <div
+            className={`question-item ${currentQuestionId !== null && answeredQuestionIds.has(currentQuestionId) ? 'question-item--answered' : 'question-item--new'}`}
+          >
+            <div className="question-header">
+              <div className="question-text">{currentQuestion?.text ?? currentTextFallback}</div>
+              <div className="question-status">
+                {currentQuestionId !== null && !answeredQuestionIds.has(currentQuestionId) && <span className="pill pill--new">Unanswered</span>}
+                {currentQuestionId !== null && answeredQuestionIds.has(currentQuestionId) && <span className="pill pill--saved">Answered</span>}
+                {currentQuestion && isQuestionDirty(currentQuestion) && <span className="pill pill--dirty">Unsaved changes</span>}
+              </div>
+            </div>
+
+            {loadingQuestion || !currentQuestion ? (
+              <div style={{ color: '#b0b0b0' }}>Loading question...</div>
+            ) : (
+              renderQuestionInput(currentQuestion)
+            )}
 
             <div className="survey-pager">
-              <button type="button" className="btn btn-secondary" onClick={goPrev} disabled={currentIndex <= 0}>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={goPrev}
+                disabled={submitting || groupIndex <= 0}
+              >
                 Previous
               </button>
               <button
                 type="button"
                 className="btn btn-primary"
                 onClick={handleNext}
-                disabled={submitting}
+                disabled={submitting || !currentQuestion}
               >
-                {currentIndex >= totalQuestions - 1 ? (submitting ? 'Finishing...' : 'Finish') : (submitting ? 'Saving...' : 'Next')}
+                {isLastInGroup && unansweredIds.length === 0
+                  ? (submitting ? 'Finishing...' : 'Finish')
+                  : (submitting ? 'Saving...' : 'Next')}
               </button>
             </div>
           </div>
-        )}
+        </div>
       </div>
     </div>
   )

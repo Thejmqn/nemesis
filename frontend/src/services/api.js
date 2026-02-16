@@ -141,6 +141,24 @@ export const answersAPI = {
   },
 }
 
+// Survey API (question-centric endpoints)
+export const surveyAPI = {
+  listQuestions: async (activeOnly = true) => {
+    const response = await api.get(`/survey/questions?active_only=${activeOnly}`)
+    return response.data
+  },
+
+  getQuestion: async (questionId) => {
+    const response = await api.get(`/survey/${questionId}`)
+    return response.data
+  },
+
+  upsertAnswer: async (questionId, answerValue) => {
+    const response = await api.put(`/survey/${questionId}`, { answer_value: answerValue })
+    return response.data
+  },
+}
+
 // Matches API
 export const matchesAPI = {
   getUserMatches: async () => {
