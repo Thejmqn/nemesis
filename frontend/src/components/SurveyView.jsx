@@ -1,9 +1,7 @@
 import { useMemo, useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { surveyAPI } from '../services/api'
 
 export default function SurveyView({ setError = () => {}, setSuccess = () => {} }) {
-  const navigate = useNavigate()
   const [questionList, setQuestionList] = useState([])
   const [questionDetailsById, setQuestionDetailsById] = useState({})
   const [answers, setAnswers] = useState({})
@@ -127,11 +125,6 @@ export default function SurveyView({ setError = () => {}, setSuccess = () => {} 
 
   const answeredIds = useMemo(() => {
     return orderedQuestions.filter(q => answeredQuestionIds.has(q.id)).map(q => q.id)
-  }, [orderedQuestions, answeredQuestionIds])
-
-  const firstUnansweredId = useMemo(() => {
-    const first = orderedQuestions.find(q => !answeredQuestionIds.has(q.id))
-    return first?.id ?? null
   }, [orderedQuestions, answeredQuestionIds])
 
   const handleAnswerChange = (questionId, value) => {
@@ -315,11 +308,6 @@ export default function SurveyView({ setError = () => {}, setSuccess = () => {} 
     )
   }
 
-  const goToFirstUnanswered = () => {
-    if (firstUnansweredId === null) return
-    setCurrentQuestionId(firstUnansweredId)
-  }
-
   const goPrev = () => {
     if (currentQuestionId === null) return
     const inAnswered = answeredQuestionIds.has(currentQuestionId)
@@ -332,6 +320,7 @@ export default function SurveyView({ setError = () => {}, setSuccess = () => {} 
   const handleNext = async () => {
     if (!currentQuestion) return
 
+    const allAnsweredBefore = answeredQuestionIds.size === totalQuestions
     setSubmitting(true)
     const wasAnswered = answeredQuestionIds.has(currentQuestion.id)
     const result = await saveAnswerIfNeeded(currentQuestion)
@@ -341,20 +330,23 @@ export default function SurveyView({ setError = () => {}, setSuccess = () => {} 
     }
 
     const nextAnsweredIds = result.nextAnsweredIds ?? answeredQuestionIds
-    const nextUnanswered = orderedQuestions.filter(q => !nextAnsweredIds.has(q.id)).map(q => q.id)
     const nextAnswered = orderedQuestions.filter(q => nextAnsweredIds.has(q.id)).map(q => q.id)
     const nextAnsweredCount = nextAnswered.length
+    const allAnsweredNow = nextAnsweredCount === totalQuestions
 
-    if (nextAnsweredCount === totalQuestions) {
+    if (!allAnsweredBefore && allAnsweredNow) {
       setSuccess('All answers saved!')
-      setTimeout(() => {
-        navigate('/matches')
-        setSuccess('')
-      }, 600)
+      setTimeout(() => setSuccess(''), 900)
+    }
+
+    if (allAnsweredNow) {
+      const nextOverallId = orderedQuestions[overallIndex + 1]?.id ?? null
+      if (nextOverallId !== null) setCurrentQuestionId(nextOverallId)
       setSubmitting(false)
       return
     }
 
+    const nextUnanswered = orderedQuestions.filter(q => !nextAnsweredIds.has(q.id)).map(q => q.id)
     if (!wasAnswered) {
       const afterCurrent = orderedQuestions.slice(overallIndex + 1).map(q => q.id)
       const nextId = afterCurrent.find(id => !nextAnsweredIds.has(id)) ?? nextUnanswered[0] ?? null
@@ -391,7 +383,6 @@ export default function SurveyView({ setError = () => {}, setSuccess = () => {} 
   const inAnswered = currentQuestionId !== null && answeredQuestionIds.has(currentQuestionId)
   const groupIds = inAnswered ? answeredIds : unansweredIds
   const groupIndex = currentQuestionId === null ? -1 : groupIds.findIndex(id => id === currentQuestionId)
-  const isLastInGroup = groupIndex !== -1 && groupIndex >= groupIds.length - 1
 
   const currentTextFallback = currentQuestionId === null
     ? ''
@@ -401,7 +392,7 @@ export default function SurveyView({ setError = () => {}, setSuccess = () => {} 
     <div className="card">
       <h2>Answer Questions</h2>
       <p className="survey-intro">
-        Pick a question from the list. Answers save when you click Next/Finish.
+        Pick a question from the list. Answers save when you click Next.
       </p>
 
       <div className="survey-layout">
@@ -450,18 +441,6 @@ export default function SurveyView({ setError = () => {}, setSuccess = () => {} 
 
         <div className="survey-main">
           <div className="survey-topbar">
-            <div className="survey-jump">
-              <button
-                type="button"
-                className="btn btn-secondary"
-                onClick={goToFirstUnanswered}
-                disabled={firstUnansweredId === null || submitting}
-                title="Jump to the first unanswered question"
-              >
-                First Unanswered
-              </button>
-            </div>
-
             <div className="survey-progress">
               <div className="survey-progress-meta">
                 <span>
@@ -508,11 +487,9 @@ export default function SurveyView({ setError = () => {}, setSuccess = () => {} 
                 type="button"
                 className="btn btn-primary"
                 onClick={handleNext}
-                disabled={submitting || !currentQuestion}
+                disabled={submitting || !currentQuestion || (unansweredIds.length === 0 && overallIndex >= totalQuestions - 1)}
               >
-                {isLastInGroup && unansweredIds.length === 0
-                  ? (submitting ? 'Finishing...' : 'Finish')
-                  : (submitting ? 'Saving...' : 'Next')}
+                {submitting ? 'Saving...' : 'Next'}
               </button>
             </div>
           </div>
