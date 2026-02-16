@@ -9,6 +9,12 @@ export default function AuthenticatedLayout({ user, onLogout, clearMessages, chi
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
         <nav className="nav-tabs">
           <button 
+            className={location.pathname === '/home' ? 'active' : ''}
+            onClick={() => { navigate('/home'); clearMessages() }}
+          >
+            Home
+          </button>
+          <button 
             className={location.pathname === '/survey' ? 'active' : ''}
             onClick={() => { navigate('/survey'); clearMessages() }}
           >

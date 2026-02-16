@@ -39,7 +39,7 @@ export default function LoginView({ setUser, setError, setSuccess, clearMessages
           setUser(userData)
           setSuccess('Logged in successfully!')
           setTimeout(() => {
-            navigate('/survey', { replace: true })
+            navigate('/home', { replace: true })
             setSuccess('')
           }, 1000)
         } catch (userErr) {

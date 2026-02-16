@@ -120,6 +120,11 @@ export const questionsAPI = {
 
 // Answers API
 export const answersAPI = {
+  create: async (answerData) => {
+    const response = await api.post('/answers/', answerData)
+    return response.data
+  },
+
   submitSurvey: async (surveyData) => {
     const response = await api.post('/answers/survey', surveyData)
     return response.data

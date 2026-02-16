@@ -96,6 +96,100 @@
   color: #d0d0d0;
 }
 
+.survey-topbar {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.survey-jump {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.survey-jump .btn {
+  padding: 10px 14px;
+  border-radius: 10px;
+}
+
+.survey-progress {
+  flex: 1;
+  min-width: 220px;
+  max-width: 520px;
+}
+
+.survey-progress-meta {
+  display: flex;
+  justify-content: space-between;
+  color: #d0d0d0;
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+
+.survey-progress-bar {
+  height: 10px;
+  background: rgba(181, 26, 43, 0.18);
+  border: 1px solid rgba(181, 26, 43, 0.35);
+  border-radius: 999px;
+  overflow: hidden;
+  box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.7);
+}
+
+.survey-progress-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, rgba(181, 26, 43, 0.8), rgba(255, 165, 134, 0.9));
+}
+
+.question-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.question-status {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid rgba(181, 26, 43, 0.35);
+  background: rgba(22, 30, 47, 0.35);
+  color: #d0d0d0;
+  white-space: nowrap;
+}
+
+.pill--new {
+  border-color: rgba(181, 26, 43, 0.55);
+  background: rgba(181, 26, 43, 0.15);
+  color: #FFA586;
+}
+
+.pill--saved {
+  border-color: rgba(84, 26, 46, 0.8);
+  background: rgba(84, 26, 46, 0.25);
+  color: #d8d8d8;
+}
+
+.pill--dirty {
+  border-color: rgba(255, 165, 134, 0.75);
+  background: rgba(255, 165, 134, 0.12);
+  color: #FFA586;
+}
+
 .option-list {
   display: flex;
   flex-direction: column;
@@ -117,10 +211,26 @@
   font-weight: 400;
   margin: 0;
   user-select: none;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: rgba(22, 30, 47, 0.25);
+  border: 1px solid rgba(181, 26, 43, 0.25);
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.08s ease;
 }
 
 .option-row input[type="radio"] {
   margin-top: 2px;
+}
+
+.option-row:hover {
+  background: rgba(181, 26, 43, 0.12);
+  border-color: rgba(181, 26, 43, 0.45);
+}
+
+.option-row--selected {
+  background: rgba(181, 26, 43, 0.22);
+  border-color: rgba(255, 165, 134, 0.65);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
 }
 
 .option-row span {
@@ -129,6 +239,35 @@
 
 .question-item .slider-container {
   margin: 0;
+}
+
+.survey-pager {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.survey-pager .btn {
+  flex: 1;
+}
+
+/* Range slider polish */
+.slider {
+  width: 100%;
+  accent-color: #B51A2B;
+}
+
+.slider-value {
+  margin-top: 6px;
+  color: #d0d0d0;
+  font-size: 13px;
+}
+
+.slider-hint {
+  margin-top: 6px;
+  color: #b0b0b0;
+  font-size: 13px;
 }
 
 .matches-list {
@@ -193,6 +332,7 @@
 }
 
 .landing-quote {
+  font-family: 'Rye', serif;
   font-size: 2em;
   font-weight: 400;
   color: #FFA586;
@@ -235,4 +375,46 @@
   gap: 20px;
   justify-content: center;
   margin-top: 40px;
+}
+
+/* Authenticated Home / Dashboard */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.dashboard-tile {
+  text-align: left;
+  padding: 18px 18px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(15, 0, 5, 1) 0%, rgba(26, 10, 15, 1) 100%);
+  border: 1px solid rgba(181, 26, 43, 0.35);
+  cursor: pointer;
+  color: #f0f0f0;
+  transition: transform 0.12s ease, border-color 0.2s ease, background 0.2s ease;
+}
+
+.dashboard-tile:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 165, 134, 0.7);
+  background: linear-gradient(135deg, rgba(181, 26, 43, 0.16) 0%, rgba(26, 10, 15, 1) 100%);
+}
+
+.dashboard-tile-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #FFA586;
+  margin-bottom: 6px;
+}
+
+.dashboard-tile-subtitle {
+  font-size: 13px;
+  color: #d0d0d0;
+}
+
+@media (max-width: 720px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
 }

@@ -12,7 +12,7 @@ export default function HomeView() {
 
       <div className="landing-content">
         <p className="landing-description">
-          Answer controversial questions. We'll find your perfect enemy.
+          Answer controversial questions. We'll find your worst enemy.
         </p>
         <p className="landing-subtext">
           The more you disagree, the more hatred you'll have.
@@ -24,7 +24,7 @@ export default function HomeView() {
           Begin
         </button>
         <button className="btn btn-secondary" onClick={() => navigate('/login')}>
-          Return
+          Login
         </button>
       </div>
     </div>

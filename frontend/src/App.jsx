@@ -6,6 +6,7 @@ import LoginView from './components/LoginView'
 import RegisterView from './components/RegisterView'
 import SurveyView from './components/SurveyView'
 import MatchesView from './components/MatchesView'
+import DashboardView from './components/DashboardView'
 import AuthenticatedLayout from './components/AuthenticatedLayout'
 import ProtectedRoute from './components/ProtectedRoute'
 import PublicRoute from './components/PublicRoute'
@@ -63,6 +64,13 @@ function App() {
             <PublicRoute user={user} loading={loading}>
               <HomeView />
             </PublicRoute>
+          } />
+          <Route path="/home" element={
+            <ProtectedRoute user={user} loading={loading}>
+              <AuthenticatedLayout user={user} onLogout={handleLogout} clearMessages={clearMessages}>
+                <DashboardView />
+              </AuthenticatedLayout>
+            </ProtectedRoute>
           } />
           <Route path="/login" element={
             <PublicRoute user={user} loading={loading}>
