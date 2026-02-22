@@ -10,6 +10,10 @@ from app.matching import calculate_match_score, find_enemy_match
 
 router = APIRouter()
 
+def _display_name(user: User) -> str:
+    full = " ".join([part for part in [user.first_name, user.last_name] if part])
+    return full or user.username or user.email
+
 @router.get("/user", response_model=List[MatchResponse])
 def get_user_matches(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     # Get all matches for the user
@@ -21,7 +25,7 @@ def get_user_matches(current_user: User = Depends(get_current_user), db: Session
         result.append(MatchResponse(
             id=match.id,
             enemy_id=match.enemy_id,
-            enemy_username=enemy.username,
+            enemy_username=_display_name(enemy),
             enemy_email=enemy.email,
             match_score=match.match_score,
             matched_at=match.matched_at
@@ -42,7 +46,7 @@ def get_latest_match(current_user: User = Depends(get_current_user), db: Session
     return MatchResponse(
         id=match.id,
         enemy_id=match.enemy_id,
-        enemy_username=enemy.username,
+        enemy_username=_display_name(enemy),
         enemy_email=enemy.email,
         match_score=match.match_score,
         matched_at=match.matched_at
@@ -72,7 +76,7 @@ def find_enemy(current_user: User = Depends(get_current_user), db: Session = Dep
     return MatchResponse(
         id=match.id,
         enemy_id=enemy_id,
-        enemy_username=enemy.username,
+        enemy_username=_display_name(enemy),
         enemy_email=enemy.email,
         match_score=match_score,
         matched_at=match.matched_at

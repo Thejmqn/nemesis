@@ -3,9 +3,31 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.database import engine, Base
 from app.routers import users, questions, answers, matches, auth, survey
 from app.scheduler import scheduler
+from sqlalchemy import inspect, text
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
+
+def _ensure_user_name_columns():
+    inspector = inspect(engine)
+    if "users" not in inspector.get_table_names():
+        return
+    columns = {col["name"] for col in inspector.get_columns("users")}
+    statements = []
+    if "first_name" not in columns:
+        statements.append("ALTER TABLE users ADD COLUMN first_name VARCHAR(100)")
+    if "last_name" not in columns:
+        statements.append("ALTER TABLE users ADD COLUMN last_name VARCHAR(100)")
+    if not statements:
+        return
+    try:
+        with engine.begin() as conn:
+            for stmt in statements:
+                conn.execute(text(stmt))
+    except Exception as e:
+        print(f"Failed to ensure user name columns: {e}")
+
+_ensure_user_name_columns()
 
 app = FastAPI(title="Nemesis App", version="1.0.0")
 

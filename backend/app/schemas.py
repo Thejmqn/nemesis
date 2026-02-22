@@ -1,6 +1,7 @@
 from pydantic import BaseModel, EmailStr
 from datetime import datetime
 from typing import Optional, List
+from pydantic import Field
 
 # Auth schemas
 class Token(BaseModel):
@@ -13,10 +14,16 @@ class TokenData(BaseModel):
 # User schemas
 class UserBase(BaseModel):
     email: EmailStr
-    username: str
+    username: Optional[str] = None
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
 
-class UserCreate(UserBase):
+class UserCreate(BaseModel):
+    email: EmailStr
     password: str
+    first_name: str = Field(..., min_length=1)
+    last_name: str = Field(..., min_length=1)
+    username: Optional[str] = None
 
 class UserResponse(UserBase):
     id: int

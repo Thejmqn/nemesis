@@ -5,6 +5,10 @@ from app.config import settings
 from sqlalchemy.orm import Session
 from app.models import User, Match
 
+def _display_name(user: User) -> str:
+    full = " ".join([part for part in [user.first_name, user.last_name] if part])
+    return full or user.username or user.email
+
 async def send_match_email(user: User, enemy: User, match_score: float):
     """Send email notification about new enemy match"""
     if not settings.smtp_user or not settings.smtp_password:
@@ -18,11 +22,11 @@ async def send_match_email(user: User, enemy: User, match_score: float):
     
     # Create email body
     text = f"""
-    Hello {user.username}!
+    Hello {_display_name(user)}!
     
     Your monthly enemy match has been calculated!
     
-    Your new enemy is: {enemy.username} ({enemy.email})
+    Your new enemy is: {_display_name(enemy)} ({enemy.email})
     Incompatibility Score: {match_score:.2f}/100
     
     The higher the score, the more incompatible you are - perfect for an enemy match!
@@ -33,11 +37,11 @@ async def send_match_email(user: User, enemy: User, match_score: float):
     html = f"""
     <html>
       <body>
-        <h2>Hello {user.username}!</h2>
+        <h2>Hello {_display_name(user)}!</h2>
         <p>Your monthly enemy match has been calculated!</p>
         <div style="background-color: #f0f0f0; padding: 20px; border-radius: 5px; margin: 20px 0;">
           <h3>Your New Enemy:</h3>
-          <p><strong>{enemy.username}</strong> ({enemy.email})</p>
+          <p><strong>{_display_name(enemy)}</strong> ({enemy.email})</p>
           <p>Incompatibility Score: <strong>{match_score:.2f}/100</strong></p>
         </div>
         <p>The higher the score, the more incompatible you are - perfect for an enemy match!</p>

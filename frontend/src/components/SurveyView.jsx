@@ -11,10 +11,20 @@ export default function SurveyView({ setError = () => {}, setSuccess = () => {} 
   const [loading, setLoading] = useState(true)
   const [loadingQuestion, setLoadingQuestion] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
 
   useEffect(() => {
     fetchSurveyQuestions()
   }, [])
+
+  useEffect(() => {
+    if (!isMenuOpen) return
+    const onKeyDown = (e) => {
+      if (e.key === 'Escape') setIsMenuOpen(false)
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [isMenuOpen])
 
   const fetchSurveyQuestions = async () => {
     try {
@@ -388,74 +398,113 @@ export default function SurveyView({ setError = () => {}, setSuccess = () => {} 
     ? ''
     : (orderedQuestions.find(q => q.id === currentQuestionId)?.text ?? '')
 
+  const progressNode = (
+    <div className="survey-progress survey-progress--header">
+      <div className="survey-progress-meta">
+        <span>
+          {answeredCount} / {totalQuestions} answered
+        </span>
+        <span>
+          {progressPercent}% • Q{Math.min(overallIndex + 1, totalQuestions)} / {totalQuestions}
+        </span>
+      </div>
+      <div className="survey-progress-bar" aria-hidden="true">
+        <div className="survey-progress-fill" style={{ width: `${progressPercent}%` }} />
+      </div>
+    </div>
+  )
+
+  const renderQuestionMenu = ({ onSelectQuestion, showHeader = false } = {}) => {
+    return (
+      <>
+        {showHeader && (
+          <div className="survey-drawer-header">
+            <div className="survey-drawer-title">Questions</div>
+            <button
+              type="button"
+              className="survey-drawer-close"
+              onClick={() => setIsMenuOpen(false)}
+              disabled={submitting}
+              aria-label="Close question list"
+            >
+              Close
+            </button>
+          </div>
+        )}
+
+        <div className="survey-list-section">
+          <div className="survey-list-title">Unanswered ({unansweredIds.length})</div>
+          <div className="survey-list">
+            {orderedQuestions.filter(q => !answeredQuestionIds.has(q.id)).map((q) => (
+              <button
+                key={q.id}
+                type="button"
+                className={`survey-list-item ${q.id === currentQuestionId ? 'survey-list-item--active' : ''}`}
+                onClick={() => onSelectQuestion?.(q.id)}
+                disabled={submitting}
+                title={q.text}
+              >
+                <span className="survey-list-item-meta">Q{(overallIndexById[q.id] ?? 0) + 1}</span>
+                <span className="survey-list-item-text">{q.text}</span>
+              </button>
+            ))}
+            {unansweredIds.length === 0 && (
+              <div className="survey-list-empty">All questions answered.</div>
+            )}
+          </div>
+        </div>
+
+        <div className="survey-list-section">
+          <div className="survey-list-title">Answered ({answeredIds.length})</div>
+          <div className="survey-list">
+            {orderedQuestions.filter(q => answeredQuestionIds.has(q.id)).map((q) => (
+              <button
+                key={q.id}
+                type="button"
+                className={`survey-list-item ${q.id === currentQuestionId ? 'survey-list-item--active' : ''}`}
+                onClick={() => onSelectQuestion?.(q.id)}
+                disabled={submitting}
+                title={q.text}
+              >
+                <span className="survey-list-item-meta">Q{(overallIndexById[q.id] ?? 0) + 1}</span>
+                <span className="survey-list-item-text">{q.text}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </>
+    )
+  }
+
   return (
     <div className="card">
-      <h2>Answer Questions</h2>
+      <div className="survey-page-header">
+        {progressNode}
+        <button
+          type="button"
+          className="survey-hamburger"
+          onClick={() => setIsMenuOpen(true)}
+          disabled={submitting}
+          aria-label="Open question list"
+          aria-controls="survey-question-drawer"
+          aria-expanded={isMenuOpen}
+        >
+          <span className="survey-hamburger-icon" aria-hidden="true" />
+          <span className="survey-hamburger-text">See Questions</span>
+        </button>
+      </div>
       <p className="survey-intro">
         Pick a question from the list. Answers save when you click Next.
       </p>
 
       <div className="survey-layout">
         <div className="survey-sidebar">
-          <div className="survey-list-section">
-            <div className="survey-list-title">Unanswered ({unansweredIds.length})</div>
-            <div className="survey-list">
-              {orderedQuestions.filter(q => !answeredQuestionIds.has(q.id)).map((q) => (
-                <button
-                  key={q.id}
-                  type="button"
-                  className={`survey-list-item ${q.id === currentQuestionId ? 'survey-list-item--active' : ''}`}
-                  onClick={() => setCurrentQuestionId(q.id)}
-                  disabled={submitting}
-                  title={q.text}
-                >
-                  <span className="survey-list-item-meta">Q{(overallIndexById[q.id] ?? 0) + 1}</span>
-                  <span className="survey-list-item-text">{q.text}</span>
-                </button>
-              ))}
-              {unansweredIds.length === 0 && (
-                <div className="survey-list-empty">All questions answered.</div>
-              )}
-            </div>
-          </div>
-
-          <div className="survey-list-section">
-            <div className="survey-list-title">Answered ({answeredIds.length})</div>
-            <div className="survey-list">
-              {orderedQuestions.filter(q => answeredQuestionIds.has(q.id)).map((q) => (
-                <button
-                  key={q.id}
-                  type="button"
-                  className={`survey-list-item ${q.id === currentQuestionId ? 'survey-list-item--active' : ''}`}
-                  onClick={() => setCurrentQuestionId(q.id)}
-                  disabled={submitting}
-                  title={q.text}
-                >
-                  <span className="survey-list-item-meta">Q{(overallIndexById[q.id] ?? 0) + 1}</span>
-                  <span className="survey-list-item-text">{q.text}</span>
-                </button>
-              ))}
-            </div>
-          </div>
+          {renderQuestionMenu({
+            onSelectQuestion: (id) => setCurrentQuestionId(id),
+          })}
         </div>
 
         <div className="survey-main">
-          <div className="survey-topbar">
-            <div className="survey-progress">
-              <div className="survey-progress-meta">
-                <span>
-                  Answered {answeredCount} / {totalQuestions}
-                </span>
-                <span>
-                  {progressPercent}% • Q{Math.min(overallIndex + 1, totalQuestions)} / {totalQuestions}
-                </span>
-              </div>
-              <div className="survey-progress-bar" aria-hidden="true">
-                <div className="survey-progress-fill" style={{ width: `${progressPercent}%` }} />
-              </div>
-            </div>
-          </div>
-
           <div
             className={`question-item ${currentQuestionId !== null && answeredQuestionIds.has(currentQuestionId) ? 'question-item--answered' : 'question-item--new'}`}
           >
@@ -493,6 +542,29 @@ export default function SurveyView({ setError = () => {}, setSuccess = () => {} 
               </button>
             </div>
           </div>
+        </div>
+      </div>
+
+      <div
+        className={`survey-drawer-overlay ${isMenuOpen ? 'is-open' : ''}`}
+        onClick={() => setIsMenuOpen(false)}
+        role="presentation"
+      >
+        <div
+          id="survey-question-drawer"
+          className="survey-drawer"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Question list"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {renderQuestionMenu({
+            showHeader: true,
+            onSelectQuestion: (id) => {
+              setCurrentQuestionId(id)
+              setIsMenuOpen(false)
+            },
+          })}
         </div>
       </div>
     </div>
