@@ -8,7 +8,7 @@ export const getApiErrorMessage = (error, fallback = 'Something went wrong') => 
   // Axios network error (no response)
   if (axios.isAxiosError?.(error) && !error.response) {
     if (error.code === 'ECONNABORTED') return 'Request timed out. Please try again.'
-    return 'Unable to reach the server. Is the backend running?'
+    return 'Unable to reach the server. Please try again later.'
   }
 
   const status = error.response?.status

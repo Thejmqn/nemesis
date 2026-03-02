@@ -38,6 +38,8 @@ class QuestionBase(BaseModel):
     type: str = "scale"  # scale, multiple_choice, boolean
     min: Optional[int] = 1
     max: Optional[int] = 10
+    min_label: Optional[str] = None
+    max_label: Optional[str] = None
     choices: Optional[List[str]] = None
     true_label: Optional[str] = None
     false_label: Optional[str] = None

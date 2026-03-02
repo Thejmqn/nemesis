@@ -147,6 +147,14 @@ export default function SurveyView({ setError = () => {}, setSuccess = () => {} 
     return { min, max }
   }
 
+  const getScaleLabels = (question) => {
+    const { min, max } = getScaleBounds(question)
+    return {
+      minLabel: question.min_label || String(min),
+      maxLabel: question.max_label || String(max),
+    }
+  }
+
   const hasDraftValue = (question) => Object.prototype.hasOwnProperty.call(answers, question.id)
 
   const isQuestionDirty = (question) => {
@@ -209,6 +217,7 @@ export default function SurveyView({ setError = () => {}, setSuccess = () => {} 
   const renderQuestionInput = (question) => {
     if (question.type === 'scale') {
       const { min, max } = getScaleBounds(question)
+      const { minLabel, maxLabel } = getScaleLabels(question)
       const value = getScaleDisplayedValue(question)
       const showValue = hasDraftValue(question) || answeredQuestionIds.has(question.id)
       return (
@@ -229,6 +238,10 @@ export default function SurveyView({ setError = () => {}, setSuccess = () => {} 
           ) : (
             <div className="slider-hint">Select a value</div>
           )}
+          <div className="slider-scale-labels">
+            <span>{minLabel}</span>
+            <span>{maxLabel}</span>
+          </div>
         </div>
       )
     }
@@ -294,6 +307,7 @@ export default function SurveyView({ setError = () => {}, setSuccess = () => {} 
     }
 
     const { min, max } = getScaleBounds(question)
+    const { minLabel, maxLabel } = getScaleLabels(question)
     const value = getScaleDisplayedValue(question)
     const showValue = hasDraftValue(question) || answeredQuestionIds.has(question.id)
     return (
@@ -314,6 +328,10 @@ export default function SurveyView({ setError = () => {}, setSuccess = () => {} 
         ) : (
           <div className="slider-hint">Select a value</div>
         )}
+        <div className="slider-scale-labels">
+          <span>{minLabel}</span>
+          <span>{maxLabel}</span>
+        </div>
       </div>
     )
   }

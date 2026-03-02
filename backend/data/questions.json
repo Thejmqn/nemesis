@@ -1,74 +1,150 @@
 [
   {
     "id": 1,
-    "text": "Pineapple belongs on pizza",
+    "text": "How ethical is it to send your parents to the nursing home?",
     "type": "scale",
     "min": 1,
     "max": 10,
+    "min_label": "1 = very unethical",
+    "max_label": "10 = very ethical",
     "is_active": true
   },
   {
     "id": 2,
-    "text": "The Oxford comma is unnecessary",
-    "type": "scale",
-    "min": 1,
-    "max": 10,
-    "is_active": true
-  },
-  {
-    "id": 3,
-    "text": "Hot dogs are sandwiches",
-    "type": "scale",
-    "min": 1,
-    "max": 10,
-    "is_active": true
-  },
-  {
-    "id": 4,
-    "text": "What is the best programming language?",
-    "type": "multiple_choice",
-    "choices": [
-      "Python",
-      "JavaScript",
-      "Java",
-      "C++",
-      "Go",
-      "Rust"
-    ],
-    "is_active": true
-  },
-  {
-    "id": 5,
-    "text": "Is water wet?",
+    "text": "Are pit-bulls naturally violent?",
     "type": "boolean",
     "true_label": "Yes",
     "false_label": "No",
     "is_active": true
   },
   {
-    "id": 6,
-    "text": "Cereal is a soup",
+    "id": 3,
+    "text": "How likely are you to give up your seat to a pregnant woman on the bus?",
     "type": "scale",
     "min": 1,
     "max": 10,
+    "min_label": "1 = not at all likely",
+    "max_label": "10 = very likely",
     "is_active": true
   },
   {
-    "id": 7,
-    "text": "Which is better?",
+    "id": 4,
+    "text": "How late are you to social events?",
+    "type": "scale",
+    "min": 0,
+    "max": 1000,
+    "min_label": "0 minutes",
+    "max_label": "1000 minutes",
+    "is_active": true
+  },
+  {
+    "id": 5,
+    "text": "Google Docs or Microsoft Word?",
     "type": "multiple_choice",
     "choices": [
-      "Tabs",
-      "Spaces"
+      "Google Docs",
+      "Microsoft Word"
     ],
     "is_active": true
   },
   {
+    "id": 6,
+    "text": "Which type of student is superior?",
+    "type": "multiple_choice",
+    "choices": [
+      "Business",
+      "Engineering",
+      "Pre-med",
+      "Pre-law"
+    ],
+    "is_active": true
+  },
+  {
+    "id": 7,
+    "text": "At what age does it become unacceptable to be living with your parents?",
+    "type": "scale",
+    "min": 18,
+    "max": 80,
+    "min_label": "18 years",
+    "max_label": "80 years",
+    "is_active": true
+  },
+  {
     "id": 8,
-    "text": "Should AI be regulated?",
+    "text": "Should every kid be forced to play a sport up to high school?",
     "type": "boolean",
-    "true_label": "Yes, regulate it",
-    "false_label": "No, let it be free",
+    "true_label": "Yes",
+    "false_label": "No",
+    "is_active": true
+  },
+  {
+    "id": 9,
+    "text": "Would you give your crying friend emotional support or logical advice?",
+    "type": "multiple_choice",
+    "choices": [
+      "Emotional support",
+      "Logical advice"
+    ],
+    "is_active": true
+  },
+  {
+    "id": 10,
+    "text": "How many hours can you wait before responding to your significant other's text?",
+    "type": "scale",
+    "min": 1,
+    "max": 1000,
+    "min_label": "1 hour",
+    "max_label": "1000 hours",
+    "is_active": true
+  },
+  {
+    "id": 11,
+    "text": "How many of the following are real sports (Cheerleading, golf, chess, competitive Fortnite, Quidditch, breakdancing)?",
+    "type": "scale",
+    "min": 0,
+    "max": 6,
+    "min_label": "0 are real sports",
+    "max_label": "6 are real sports",
+    "is_active": true
+  },
+  {
+    "id": 12,
+    "text": "If a kid is crying on the plane ride the whole time, do you blame the kid or the parent?",
+    "type": "scale",
+    "min": 1,
+    "max": 10,
+    "min_label": "1 = blame the kid more",
+    "max_label": "10 = blame the parent more",
+    "is_active": true
+  },
+  {
+    "id": 13,
+    "text": "How likely are you to use a bidet in a public bathroom if available?",
+    "type": "scale",
+    "min": 1,
+    "max": 10,
+    "min_label": "1 = not at all likely",
+    "max_label": "10 = very likely",
+    "is_active": true
+  },
+  {
+    "id": 14,
+    "text": "Thot daughter or gay son?",
+    "type": "multiple_choice",
+    "choices": [
+      "Thot daughter",
+      "Gay son"
+    ],
+    "is_active": true
+  },
+  {
+    "id": 15,
+    "text": "How many miles per hour is it appropriate to go over the speed limit on a highway?",
+    "type": "scale",
+    "min": 0,
+    "max": 100,
+    "min_label": "0 mph over",
+    "max_label": "100 mph over",
     "is_active": true
   }
 ]
