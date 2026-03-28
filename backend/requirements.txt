@@ -12,3 +12,4 @@ aiosmtplib==3.0.1
 apscheduler==3.10.4
 pymysql==1.1.0
 email-validator==2.1.0
+azure-functions>=1.12.0
